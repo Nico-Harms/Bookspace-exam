@@ -1,13 +1,14 @@
-import { redirect, type ActionFunctionArgs } from "react-router";
-import { logout } from "~/services/auth.server";
+import { redirect } from "react-router";
+import type { Route } from "./+types/logout";
+import { sessionStorage } from "~/services/session.server";
 
-export const action = async () => {
-  const headers = new Headers();
-  headers.set("Set-Cookie", await logout());
-  return redirect("/login", { headers });
-};
-
-// This component will never render because we always redirect
-export default function Logout() {
-  return <p>Logging out...</p>;
+export async function action({ request }: Route.ActionArgs) {
+  // Get the session
+  const session = await sessionStorage.getSession(
+    request.headers.get("cookie"),
+  );
+  // Destroy the session and redirect to the signin page
+  return redirect("/login", {
+    headers: { "Set-Cookie": await sessionStorage.destroySession(session) },
+  });
 }

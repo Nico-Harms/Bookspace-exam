@@ -67,7 +67,10 @@ export function LoginForm({
             Or continue with
           </span>
         </div>
-        <Button variant="outline" type="button" className="w-full">
+      </Form>
+
+      <Form method="post" action="/auth/google">
+        <Button variant="outline" type="submit" className="w-full">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 48 48"

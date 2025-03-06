@@ -1,45 +1,17 @@
-import {
-  Form,
-  Link,
-  redirect,
-  useActionData,
-  useNavigation,
-  type ActionFunctionArgs,
-} from "react-router";
-import { login, createUserSession } from "../services/auth.server";
-import { GalleryVerticalEnd } from "lucide-react";
-import { LoginForm } from "../components/login-form";
+import { data, redirect } from "react-router";
+import { authenticator, getAuthUser } from "~/services/auth.server";
+import type { Route } from "./+types/login";
+import { sessionStorage } from "~/services/session.server";
+import { LoginForm } from "~/components/login-form";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  // Simple validation
-  if (!email || !password) {
-    return { error: "Email and password are required" };
+export async function loader({ request }: Route.LoaderArgs) {
+  const user = await getAuthUser(request);
+  if (user) {
+    return redirect("/");
   }
-
-  // Attempt login
-  const result = await login(email, password);
-
-  if (result.error) {
-    return { error: result.error };
-  }
-
-  // Create session
-  const userId = result.user?._id.toString();
-  const headers = new Headers();
-  if (userId) {
-    headers.set("Set-Cookie", await createUserSession(userId));
-  }
-
-  return redirect("/dashboard", { headers });
-};
+}
 
 export default function LoginPage() {
-  const actionData = useActionData<{ error?: string }>();
-
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
@@ -59,4 +31,25 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  try {
+    let authUser = await authenticator.authenticate("email-pass", request);
+    if (!authUser) {
+      return redirect("/signin");
+    }
+    const session = await sessionStorage.getSession(
+      request.headers.get("cookie"),
+    );
+    session.set("authUser", authUser);
+    return redirect("/", {
+      headers: { "Set-Cookie": await sessionStorage.commitSession(session) },
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      // here the error related to the authentication process
+      return data({ error: error.message });
+    }
+  }
 }

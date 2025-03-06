@@ -1,61 +1,23 @@
-import {
-  Form,
-  Link,
-  redirect,
-  useActionData,
-  useNavigation,
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
-} from "react-router";
-import {
-  signup,
-  createUserSession,
-  getAuthenticatedUser,
-} from "../services/auth.server";
-import { GalleryVerticalEnd } from "lucide-react";
-import { SignupForm } from "../components/signup-form";
+import { redirect, data } from "react-router";
+import type { Route } from "./+types/signup";
+import { signup } from "~/services/auth.server";
+import { sessionStorage } from "~/services/session.server";
+import { SignupForm } from "~/components/signup-form";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // This will automatically redirect to login if not authenticated
-  const user = await getAuthenticatedUser(request);
-  if (user) {
-    return redirect("/dashboard");
+// We need to export a loader function to check if the user is already
+// authenticated and redirect them to the dashboard
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await sessionStorage.getSession(
+    request.headers.get("cookie"),
+  );
+  const authUser = session.get("authUser");
+  if (authUser) {
+    return redirect("/");
   }
-
-  return { user };
-};
-
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  // validation
-  if (!email || !password || !name) {
-    return { error: "All fields are required" };
-  }
-
-  // Attempt signup
-  const result = await signup(name, email, password);
-
-  if (result.error) {
-    return { error: result.error };
-  }
-
-  // Create session
-  const userId = result.user?._id.toString();
-  const headers = new Headers();
-  if (userId) {
-    headers.set("Set-Cookie", await createUserSession(userId));
-  }
-
-  return redirect("/dashboard", { headers });
-};
+  return data(null);
+}
 
 export default function SignupPage() {
-  const actionData = useActionData<{ error?: string }>();
-
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
@@ -77,4 +39,40 @@ export default function SignupPage() {
       </div>
     </div>
   );
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  try {
+    const formData = await request.formData();
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    if (!name || !email || !password) {
+      return data({ error: "Please provide name, email and password." });
+    }
+
+    // Use the signup function from auth.server.ts
+    const result = await signup(name, email, password);
+
+    if (result.error) {
+      return data({ error: result.error });
+    }
+
+    // Create a session and set the auth user
+    const session = await sessionStorage.getSession(
+      request.headers.get("cookie"),
+    );
+    session.set("authUser", { _id: result.user._id });
+
+    // Redirect to home page with session cookie
+    return redirect("/", {
+      headers: { "Set-Cookie": await sessionStorage.commitSession(session) },
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      return data({ error: error.message });
+    }
+    return data({ error: "An unexpected error occurred during signup." });
+  }
 }
