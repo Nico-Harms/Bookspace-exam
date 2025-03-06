@@ -1,31 +1,43 @@
 import mongoose from "mongoose";
 
+const { MONGODB_URL, NODE_ENV } = process.env;
+
+if (!MONGODB_URL) {
+  throw new Error(
+    "Please define the MONGODB_URL environment variable in your .env file",
+  );
+}
+
 export default function connectDb() {
-  if (process.env.NODE_ENV === "development") {
+  // In development, overwrite models to pick up schema changes
+  if (NODE_ENV === "development") {
     mongoose.set("overwriteModels", true);
   }
 
+  // Reuse existing connection if available
   const readyState = mongoose.connection.readyState;
   if (readyState > 0) {
-    console.log(
-      "Mongoose: Re-using existing connection (readyState: %d)",
-      readyState,
-    );
+    console.log("Mongoose: Re-using existing connection");
     return;
   }
 
-  mongoose.connection.on("error", (error: any) => {
-    console.error("Mongoose: error %s", error);
+  // Set up connection event handlers
+  mongoose.connection.on("error", (error) => {
+    console.error("Mongoose error:", error);
   });
 
-  for (const event of ["connected", "reconnected", "disconnected", "close"]) {
-    mongoose.connection.on(event, () => console.log("Mongoose: %s", event));
-  }
-
-  if (!process.env.MONGODB_URL) {
-    throw new Error("MONGODB_URL environment variable is not defined");
-  }
-  mongoose.connect(process.env.MONGODB_URL).catch((error: any) => {
-    console.error(error);
+  mongoose.connection.on("connected", () => {
+    console.log("Mongoose: Connected to MongoDB");
   });
+
+  mongoose.connection.on("disconnected", () => {
+    console.log("Mongoose: Disconnected from MongoDB");
+  });
+
+  // Create the connection
+  mongoose.connect(MONGODB_URL as string).catch((error) => {
+    console.error("Connection error:", error);
+  });
+
+  console.log("Mongoose: Connection attempt initiated to", MONGODB_URL);
 }
