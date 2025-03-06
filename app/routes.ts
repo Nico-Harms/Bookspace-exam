@@ -9,5 +9,5 @@ export default [
   route("logout", "routes/logout.tsx"),
   route("dashboard", "routes/dashboard.tsx"),
   route("auth/google", "routes/auth/google.ts"),
-  route("auth/google-callback", "routes/auth/google-callback.ts"),
+  route("auth/google/callback", "routes/auth/google-callback.ts"),
 ] satisfies RouteConfig;

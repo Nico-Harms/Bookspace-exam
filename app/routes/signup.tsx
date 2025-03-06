@@ -63,7 +63,7 @@ export async function action({ request }: Route.ActionArgs) {
     const session = await sessionStorage.getSession(
       request.headers.get("cookie"),
     );
-    session.set("authUser", { _id: result.user._id });
+    session.set("authUser", { _id: result.user?._id });
 
     // Redirect to home page with session cookie
     return redirect("/", {

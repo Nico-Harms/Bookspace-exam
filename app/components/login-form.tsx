@@ -33,6 +33,14 @@ export function LoginForm({
       {actionData?.error && (
         <div className="bg-red-100 p-3 rounded text-red-700 text-sm">
           {actionData.error}
+          <div className="mt-2">
+            <Link
+              to="/login/reset"
+              className="text-red-800 font-semibold underline"
+            >
+              Fix password mismatch issue
+            </Link>
+          </div>
         </div>
       )}
 
@@ -45,19 +53,26 @@ export function LoginForm({
             type="email"
             placeholder="m@example.com"
             required
+            autoComplete="email"
           />
         </div>
         <div className="grid gap-3">
           <div className="flex items-center">
             <Label htmlFor="password">Password</Label>
-            <a
-              href="#"
+            <Link
+              to="/reset-password"
               className="ml-auto text-sm underline-offset-4 hover:underline"
             >
               Forgot your password?
-            </a>
+            </Link>
           </div>
-          <Input id="password" name="password" type="password" required />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+          />
         </div>
         <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? "Logging in..." : "Login"}

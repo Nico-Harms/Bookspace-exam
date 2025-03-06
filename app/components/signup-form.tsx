@@ -37,6 +37,7 @@ export function SignupForm({
             type="text"
             placeholder="Enter your name..."
             required
+            autoComplete="name"
           />
         </div>
         <div className="grid gap-3">
@@ -47,11 +48,19 @@ export function SignupForm({
             type="email"
             placeholder="m@example.com"
             required
+            autoComplete="email"
           />
         </div>
         <div className="grid gap-3">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" name="password" type="password" required />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autoComplete="new-password"
+            minLength={6}
+          />
         </div>
         <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? "Creating account..." : "Sign up"}
@@ -61,7 +70,10 @@ export function SignupForm({
             Or continue with
           </span>
         </div>
-        <Button variant="outline" type="button" className="w-full">
+      </Form>
+
+      <Form method="post" action="/auth/google">
+        <Button variant="outline" type="submit" className="w-full">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 48 48"

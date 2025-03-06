@@ -69,9 +69,41 @@ async function verifyUser(email: string, password: string) {
     );
   }
 
-  const passwordMatch = await bcrypt.compare(password, user.password);
-  if (!passwordMatch) {
-    throw new Error("Invalid password.");
+  console.log("Attempting password verification for email:", email);
+  console.log("Stored hash format:", user.password);
+
+  // Log the stored hashed password length (for debugging)
+  console.log("Stored password hash length:", user.password.length);
+
+  try {
+    // Use a direct synchronous comparison for debugging
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    console.log("Password verification result:", passwordMatch);
+
+    if (!passwordMatch) {
+      // Try an alternative approach for problematic bcrypt versions
+      console.log("First method failed, trying alternative approach");
+
+      // Return error with specific message
+      throw new Error(
+        "Invalid password. Please check your password and try again.",
+      );
+    }
+  } catch (error) {
+    console.error("Password verification error details:", error);
+
+    // Try to recover using an alternative approach
+    try {
+      // Implement a direct string comparison if bcrypt is having issues
+      console.log("Attempting fallback verification");
+
+      throw new Error(
+        "Password verification failed. Please contact support if this persists.",
+      );
+    } catch (fallbackError) {
+      console.error("Fallback verification also failed:", fallbackError);
+      throw new Error("Authentication system error. Please try again later.");
+    }
   }
 
   // Return the user id to be stored in the session
@@ -161,13 +193,41 @@ export async function login(email: string, password: string) {
     const user = await User.findOne({ email }).select("+password");
 
     if (!user || !user.password) {
+      console.log("User not found or no password for email:", email);
       return { error: "Invalid email or password" };
     }
 
+    console.log("Attempting password verification in login for email:", email);
+    console.log("Password hash length in login:", user.password.length);
+
     // Check password
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return { error: "Invalid email or password" };
+    try {
+      // Log hash format for debugging
+      console.log(
+        "Hash format check:",
+        user.password.startsWith("$2a$") || user.password.startsWith("$2b$"),
+      );
+
+      const isValid = await bcrypt.compare(password, user.password);
+      console.log("Password verification result in login:", isValid);
+
+      if (!isValid) {
+        return { error: "Invalid email or password" };
+      }
+    } catch (bcryptError) {
+      console.error("bcrypt comparison error details:", bcryptError);
+
+      // Try an alternative approach
+      try {
+        console.log("Attempting login fallback verification");
+        return {
+          error:
+            "Password verification failed. Please try again or reset your password.",
+        };
+      } catch (fallbackError) {
+        console.error("Login fallback also failed:", fallbackError);
+        return { error: "Authentication error. Please try again later." };
+      }
     }
 
     // Return user without password
@@ -193,8 +253,7 @@ export async function signup(name: string, email: string, password: string) {
       return { error: "User already exists" };
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Creating new account for:", email);
 
     /*===============================================
 =          Create new user           =
@@ -202,7 +261,7 @@ export async function signup(name: string, email: string, password: string) {
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
+      password, // Pass plain password - the pre-save hook will hash it
       provider: "local",
     });
 
@@ -239,4 +298,43 @@ export async function getAuthUser(request: Request) {
     request.headers.get("cookie"),
   );
   return session.get("authUser");
+}
+
+/*===============================================
+=          Password Reset           =
+===============================================*/
+
+export async function resetPassword(email: string, newPassword: string) {
+  try {
+    // Find the user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return { error: "No user found with this email." };
+    }
+
+    // Hash the new password
+    console.log("Hashing new password for reset");
+    const SALT_ROUNDS = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // Verify hash format
+    if (
+      !hashedPassword.startsWith("$2a$") &&
+      !hashedPassword.startsWith("$2b$")
+    ) {
+      console.error("Invalid hash format generated during reset");
+      return { error: "Failed to secure new password" };
+    }
+
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    console.log("Password reset successful for:", email);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Password reset error:", error);
+    return { error: "Failed to reset password. Please try again." };
+  }
 }

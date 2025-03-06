@@ -37,7 +37,7 @@ export async function action({ request }: Route.ActionArgs) {
   try {
     let authUser = await authenticator.authenticate("email-pass", request);
     if (!authUser) {
-      return redirect("/signin");
+      return redirect("/login");
     }
     const session = await sessionStorage.getSession(
       request.headers.get("cookie"),
