@@ -1,9 +1,9 @@
 import { data, redirect } from "react-router";
 import { getAuthUser } from "~/services/auth.server";
 import { ResetPasswordForm } from "~/components/reset-password-form";
-import type { LoaderArgs, ActionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 
-export async function loader({ request }: LoaderArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getAuthUser(request);
   if (user) {
     return redirect("/");
@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
   );
 }
 
-export async function action({ request }: ActionArgs) {
+export async function action({ request }: ActionFunctionArgs) {
   try {
     const formData = await request.formData();
     const email = formData.get("email") as string;

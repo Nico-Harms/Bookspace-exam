@@ -7,6 +7,7 @@ export default [
   route("login", "routes/login.tsx"),
   route("signup", "routes/signup.tsx"),
   route("logout", "routes/logout.tsx"),
+  route("reset-password", "routes/reset-password.tsx"),
   route("dashboard", "routes/dashboard.tsx"),
   route("auth/google", "routes/auth/google.ts"),
   route("auth/google/callback", "routes/auth/google-callback.ts"),
