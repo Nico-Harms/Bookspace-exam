@@ -3,9 +3,7 @@ import type {
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
-import type { UserType } from "../../models/User";
-import type { Collection } from "mongoose";
-import type { ComponentProps as BaseComponentProps, MetaArgs } from "./index";
+import type { BookType } from "~/models/Book";
 
 export namespace Route {
   export type LoaderArgs = LoaderFunctionArgs;
@@ -13,11 +11,16 @@ export namespace Route {
   export type MetaArgs = Parameters<MetaFunction>[0];
 
   export interface LoaderData {
-    user: UserType;
-    dbName: string;
-    collections: Collection[];
-    models: string[];
+    user: {
+      _id: string;
+      name: string;
+      email: string;
+      profileImage?: string;
+    };
+    books: BookType[];
   }
 
-  export type ComponentProps = BaseComponentProps<LoaderData>;
+  export type ComponentProps = {
+    loaderData: LoaderData;
+  };
 }
