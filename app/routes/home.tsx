@@ -4,6 +4,7 @@ import * as AuthService from "~/services/auth.server";
 import Book from "~/models/Book";
 import { BookCard } from "~/components/books/BookCard";
 import { EmptyState } from "~/components/ui/EmptyState";
+import { Link } from "react-router";
 
 // Loader
 export async function loader({ request }: Route.LoaderArgs) {
@@ -28,9 +29,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       <h1 className="text-2xl font-bold mb-6">Our Books</h1>
 
       {books.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4 auto-rows-[1fr]">
           {books.map((book) => (
-            <BookCard key={String(book._id)} book={book} />
+            <Link to={`/books/${book._id}`} key={String(book._id)}>
+              <BookCard book={book as BookType} />
+            </Link>
           ))}
         </div>
       ) : (

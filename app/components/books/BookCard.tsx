@@ -4,7 +4,7 @@ import type { BookCardProps } from "~/types/book";
 
 export const BookCard = ({ book }: BookCardProps) => {
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out hover:-translate-y-1 overflow-hidden border border-gray-100">
       <div className="aspect-[2/3] relative">
         <img
           src={book.coverImage?.url || "/placeholder.png"}

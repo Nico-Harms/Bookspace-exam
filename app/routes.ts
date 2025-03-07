@@ -4,6 +4,7 @@ export default [
   // Home route - both at / and /home
   index("routes/home.tsx"),
   // Auth routes
+  route("books/:id", "routes/book-single.tsx"),
   route("login", "routes/login.tsx"),
   route("signup", "routes/signup.tsx"),
   route("logout", "routes/logout.tsx"),
