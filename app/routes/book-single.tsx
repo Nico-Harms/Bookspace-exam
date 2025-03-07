@@ -4,6 +4,7 @@ import type { LoaderArgs } from "./+types";
 import type { Book as BookType } from "~/types/book";
 import * as AuthService from "~/services/auth.server";
 import { useState } from "react";
+import { Link } from "react-router";
 
 /*===============================================
 =          Loader           =
@@ -17,22 +18,32 @@ export async function loader({ request, params }: LoaderArgs) {
     throw new Response("Book ID is required", { status: 400 });
   }
 
+  // First try to find the book
   const book = await Book.findById(bookId).lean();
 
   if (!book) {
     return { book: null, bookId };
   }
 
-  // Fetch similar books that share at least one genre with the current book
-  // Exclude the current book, limit to 5 books
+  // Then find similar books, but use string comparison for _id
   const similarBooks = await Book.find({
-    _id: { $ne: bookId }, // Exclude current book
-    genres: { $in: book.genres }, // Match any genre from current book
+    _id: { $ne: String(bookId) }, // Convert to string for comparison
+    genres: { $in: book.genres },
   })
     .limit(5)
     .lean();
 
-  return { book, bookId, similarBooks };
+  // Convert all IDs to strings to ensure consistency
+  const formattedSimilarBooks = similarBooks.map((book) => ({
+    ...book,
+    _id: String(book._id),
+  }));
+
+  return {
+    book: { ...book, _id: String(book._id) },
+    bookId,
+    similarBooks: formattedSimilarBooks,
+  };
 }
 
 /*===============================================
@@ -163,23 +174,31 @@ export default function BookSingle({
           <div className="flex gap-4 overflow-x-auto pb-4">
             {similarBooks.length > 0 ? (
               similarBooks.map((similarBook) => (
-                <div key={similarBook._id} className="w-24 flex-shrink-0">
-                  {similarBook.coverImage?.url ? (
-                    <img
-                      src={similarBook.coverImage.url}
-                      alt={`Cover for ${similarBook.title}`}
-                      className="w-full h-36 object-cover rounded-lg shadow-md"
-                    />
-                  ) : (
-                    <div className="w-full h-36 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-500 text-sm">No cover</span>
-                    </div>
-                  )}
-                  <p className="text-sm mt-1 truncate">{similarBook.title}</p>
+                <Link
+                  key={similarBook._id}
+                  to={`/books/${similarBook._id}`}
+                  className="w-24 flex-shrink-0 group hover:opacity-90 transition-opacity"
+                >
+                  <div className="relative">
+                    {similarBook.coverImage?.url ? (
+                      <img
+                        src={similarBook.coverImage.url}
+                        alt={`Cover for ${similarBook.title}`}
+                        className="w-full h-36 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow"
+                      />
+                    ) : (
+                      <div className="w-full h-36 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-500 text-sm">No cover</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm mt-1 truncate font-medium group-hover:text-primary">
+                    {similarBook.title}
+                  </p>
                   <p className="text-xs text-gray-600 truncate">
                     {similarBook.author?.[0]}
                   </p>
-                </div>
+                </Link>
               ))
             ) : (
               <p className="text-gray-500 italic">No similar books found</p>
