@@ -18,6 +18,10 @@ export namespace Route {
       profileImage?: string;
     };
     books: BookType[];
+    genres: string[];
+    q: string;
+    sortBy: string;
+    filterGenre: string;
   }
 
   export type ComponentProps = {

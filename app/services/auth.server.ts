@@ -166,7 +166,8 @@ export async function getAuthenticatedUser(request: Request) {
       return null;
     }
 
-    return User.findById(userId);
+    // Use lean() to return a plain JavaScript object instead of a Mongoose document
+    return User.findById(userId).lean();
   } catch (error) {
     return null;
   }

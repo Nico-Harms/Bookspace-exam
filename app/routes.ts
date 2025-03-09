@@ -1,10 +1,20 @@
-import { type RouteConfig, index, route } from "@react-router/dev/routes";
+import {
+  type RouteConfig,
+  index,
+  layout,
+  route,
+} from "@react-router/dev/routes";
 
 export default [
   // Home route - both at / and /home
-  index("routes/home.tsx"),
-  // Auth routes
-  route("books/:id", "routes/book-single.tsx"),
+  layout("layouts/protected.tsx", [
+    index("routes/home.tsx"),
+    route("progress", "routes/progress.tsx"),
+    route("bookmarks", "routes/bookmarks.tsx"),
+    route("profile", "routes/profile.tsx"),
+    route("books/:id", "routes/book-single.tsx"),
+  ]),
+
   route("login", "routes/login.tsx"),
   route("signup", "routes/signup.tsx"),
   route("logout", "routes/logout.tsx"),
