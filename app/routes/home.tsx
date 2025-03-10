@@ -11,6 +11,7 @@ import {
   formatBookDocuments,
   type SortOption,
 } from "~/utils/bookFilters";
+import { BookOfTheWeek } from "~/components/books/BookOfTheWeek";
 
 /*===============================================
 =          Types          =
@@ -110,9 +111,15 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Our Books</h1>
+    <div className="max-w-4xl mx-auto p-6 mt-10">
+      <img
+        src="/logo.png"
+        alt="Book of the Week"
+        className="w-[150px] h-auto mx-auto"
+      />
 
+      <h1 className="headline font-bold mb-6">Book of the week</h1>
+      <BookOfTheWeek books={books} />
       {/* Filter Section */}
       <BookFilter
         genres={genres}
@@ -127,13 +134,16 @@ export default function Home() {
       />
 
       {/* Book results */}
+      <div>
+        <h2 className="headline py-5">Look for your next favorite book</h2>
+      </div>
       {books.length === 0 ? (
         <EmptyState
           title="No books found"
           message="Try adjusting your search or filter criteria."
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {books.map((book: BookType) => (
             <Link to={`/books/${book._id}`} key={book._id}>
               <BookCard book={book} />

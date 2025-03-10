@@ -51,7 +51,7 @@ body {
   --headline--2: clamp(1.3021rem, 0.5502rem + 3.2082vw, 2.4rem);
   --headline--1: clamp(2.525rem, 0.6068rem + 3.6777vw, 5.5rem);
   --headline-0: clamp(1.875rem, 0.6614rem + 3.178vw, 4.875rem);
-  --headline-1: clamp(2.25rem, 0.7103rem + 6.5696vw, 7.5938rem);
+  --headline-1: clamp(0.75rem, 0.7103rem + 2.5696vw, 2.5938rem);
   --headline-2: clamp(2.7rem, 0.748rem + 8.3285vw, 10.7422rem);
   --headline-3: clamp(3.24rem, 0.7672rem + 10.5504vw, 13.4277rem);
   --headline-4: clamp(3.888rem, 0.7577rem + 13.3558vw, 16.7847rem);
