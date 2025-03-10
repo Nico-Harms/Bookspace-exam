@@ -10,6 +10,7 @@ export default [
   layout("layouts/protected.tsx", [
     index("routes/home.tsx"),
     route("progress", "routes/progress.tsx"),
+    route("progress/:id", "routes/progress-single.tsx"),
     route("bookmarks", "routes/bookmarks.tsx"),
     route("profile", "routes/profile.tsx"),
     route("books/:id", "routes/book-single.tsx"),

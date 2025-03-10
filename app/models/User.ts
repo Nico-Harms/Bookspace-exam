@@ -14,8 +14,15 @@ const userSchema = new Schema(
       select: false,
     },
     profileImage: String,
+    bookmarks: [
+      {
+        type: Types.ObjectId,
+        ref: "Book",
+        default: [],
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Hash password before saving

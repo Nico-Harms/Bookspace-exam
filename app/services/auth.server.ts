@@ -72,7 +72,7 @@ async function verifyUser(email: string, password: string) {
     throw new Error("No user found with this email.");
   }
 
-  if (!user.password) {
+  if (!user.password || typeof user.password !== "string") {
     throw new Error(
       "This email is associated with an OAuth account. Please sign in with Google.",
     );
@@ -181,7 +181,7 @@ export async function login(email: string, password: string) {
     // Find user with password
     const user = await User.findOne({ email }).select("+password");
 
-    if (!user || !user.password) {
+    if (!user || !user.password || typeof user.password !== "string") {
       return { error: "Invalid email or password" };
     }
 

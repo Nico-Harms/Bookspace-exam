@@ -19,6 +19,30 @@ body {
   }
 }
 
+/* Custom Scrollbar Styling */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(203, 213, 225, 0.5) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px; /* For horizontal scrollbar */
+  width: 6px; /* For vertical scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(203, 213, 225, 0.5);
+  border-radius: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.7);
+}
+
 :root {
   /*===============================================
   =          Clamps           =
@@ -26,7 +50,7 @@ body {
 
   --headline--2: clamp(1.3021rem, 0.5502rem + 3.2082vw, 2.4rem);
   --headline--1: clamp(2.525rem, 0.6068rem + 3.6777vw, 5.5rem);
-  --headline-0: clamp(1.875rem, 0.6614rem + 5.178vw, 6.875rem);
+  --headline-0: clamp(1.875rem, 0.6614rem + 3.178vw, 4.875rem);
   --headline-1: clamp(2.25rem, 0.7103rem + 6.5696vw, 7.5938rem);
   --headline-2: clamp(2.7rem, 0.748rem + 8.3285vw, 10.7422rem);
   --headline-3: clamp(3.24rem, 0.7672rem + 10.5504vw, 13.4277rem);

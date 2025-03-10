@@ -15,9 +15,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function Profile({ loaderData }: { loaderData: { user: any } }) {
   const { user } = loaderData;
-  console.log(user);
+
   return (
-    <div className="p-6">
+    <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Profile</h1>
 
       <div className="bg-white rounded-lg shadow mb-6">
@@ -31,7 +31,7 @@ export default function Profile({ loaderData }: { loaderData: { user: any } }) {
               />
             ) : (
               <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-2xl text-gray-600">{user.name}</span>
+                <span className="text-2xl text-gray-600">{user.name[0]}</span>
               </div>
             )}
           </div>
@@ -39,62 +39,46 @@ export default function Profile({ loaderData }: { loaderData: { user: any } }) {
           <p className="text-gray-600">{user.email}</p>
         </div>
 
-        <div className="p-4 space-y-2">
-          <Link to="/settings" className="block p-2 hover:bg-gray-50 rounded">
-            <div className="flex items-center">
-              <svg
-                className="w-5 h-5 mr-3 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <span>Settings</span>
+        <div className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Account Information</h3>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-500">Name</p>
+              <p>{user.name}</p>
             </div>
-          </Link>
-
-          <Link
-            to="/reading-history"
-            className="block p-2 hover:bg-gray-50 rounded"
-          >
-            <div className="flex items-center">
-              <svg
-                className="w-5 h-5 mr-3 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span>Reading History</span>
+            <div>
+              <p className="text-sm text-gray-500">Email</p>
+              <p>{user.email}</p>
             </div>
-          </Link>
+            <div>
+              <p className="text-sm text-gray-500">Account Created</p>
+              <p>
+                {new Date(user.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Login Method</p>
+              <p className="capitalize">{user.provider || "Email/Password"}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <Form action="/logout" method="post" className="block">
-            <button
-              type="submit"
-              className="w-full text-left p-2 hover:bg-gray-50 rounded"
-            >
-              <div className="flex items-center text-red-600">
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Account Actions</h3>
+          <div className="space-y-4">
+            <div>
+              <Link
+                to="/bookmarks"
+                className="text-indigo-600 hover:text-indigo-800 flex items-center"
+              >
                 <svg
-                  className="w-5 h-5 mr-3"
+                  className="w-5 h-5 mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -102,31 +86,57 @@ export default function Profile({ loaderData }: { loaderData: { user: any } }) {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
+                    strokeWidth="2"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                  ></path>
                 </svg>
-                <span>Logout</span>
-              </div>
-            </button>
-          </Form>
-        </div>
-      </div>
-
-      <div className="p-4 bg-white rounded-lg shadow">
-        <h3 className="font-medium mb-2">Reading Stats</h3>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="p-2">
-            <div className="text-xl font-bold">12</div>
-            <div className="text-xs text-gray-600">Books Read</div>
-          </div>
-          <div className="p-2">
-            <div className="text-xl font-bold">3</div>
-            <div className="text-xs text-gray-600">Currently Reading</div>
-          </div>
-          <div className="p-2">
-            <div className="text-xl font-bold">23</div>
-            <div className="text-xs text-gray-600">Want to Read</div>
+                View Bookmarks
+              </Link>
+            </div>
+            <div>
+              <Link
+                to="/progress"
+                className="text-indigo-600 hover:text-indigo-800 flex items-center"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                View Reading Progress
+              </Link>
+            </div>
+            <div>
+              <Form action="/logout" method="post" className="block">
+                <button
+                  type="submit"
+                  className="text-red-600 hover:text-red-800 flex items-center"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    ></path>
+                  </svg>
+                  Logout
+                </button>
+              </Form>
+            </div>
           </div>
         </div>
       </div>
