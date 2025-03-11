@@ -2,6 +2,7 @@ import { Form, Link } from "react-router";
 import * as AuthService from "~/services/auth.server";
 import type { Route } from "./+types/home";
 import User from "~/models/User";
+import { Avatar } from "~/components/ui/Avatar";
 
 export async function loader({ request }: Route.LoaderArgs) {
   // Require authentication
@@ -22,18 +23,8 @@ export default function Profile({ loaderData }: { loaderData: { user: any } }) {
 
       <div className="bg-white rounded-lg shadow mb-6">
         <div className="p-6 text-center border-b">
-          <div className="relative mx-auto w-24 h-24 mb-4">
-            {user.profileImage ? (
-              <img
-                src={user.profileImage}
-                alt="Profile"
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-2xl text-gray-600">{user.name[0]}</span>
-              </div>
-            )}
+          <div className="relative mx-auto mb-4">
+            <Avatar src={user.profileImage} name={user.name} size="xl" />
           </div>
           <h2 className="text-xl font-semibold">{user.name}</h2>
           <p className="text-gray-600">{user.email}</p>
@@ -59,10 +50,6 @@ export default function Profile({ loaderData }: { loaderData: { user: any } }) {
                   day: "numeric",
                 })}
               </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Login Method</p>
-              <p className="capitalize">{user.provider || "Email/Password"}</p>
             </div>
           </div>
         </div>

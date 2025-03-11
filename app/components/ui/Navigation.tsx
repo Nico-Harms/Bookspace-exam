@@ -1,13 +1,25 @@
-import { NavLink } from "react-router";
+import { NavLink, useRouteLoaderData } from "react-router";
+import { Avatar } from "./Avatar";
 
 export function Navigation() {
+  // Get the user data from the protected layout loader
+  const loaderData = useRouteLoaderData("layouts/protected") as
+    | { user?: { profileImage?: string; name?: string } }
+    | undefined;
+  const user = loaderData?.user;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md">
       <div className="flex justify-around items-center py-3">
         <NavItem to="/" icon="home" label="Home" />
         <NavItem to="/progress" icon="book-open" label="Progress" />
         <NavItem to="/bookmarks" icon="bookmark" label="Bookmarks" />
-        <NavItem to="/profile" icon="user" label="Profile" />
+        <NavItem
+          to="/profile"
+          label="Profile"
+          avatar={user?.profileImage}
+          avatarName={user?.name}
+        />
       </div>
     </nav>
   );
@@ -17,10 +29,14 @@ function NavItem({
   to,
   icon,
   label,
+  avatar,
+  avatarName,
 }: {
   to: string;
-  icon: string;
+  icon?: string;
   label: string;
+  avatar?: string;
+  avatarName?: string;
 }) {
   return (
     <NavLink
@@ -29,7 +45,13 @@ function NavItem({
         `flex flex-col items-center text-sm ${isActive ? "text-primary" : "text-gray-500"}`
       }
     >
-      <span className="mb-1">{getIcon(icon)}</span>
+      <span className="mb-1">
+        {avatar ? (
+          <Avatar src={avatar} name={avatarName} size="sm" />
+        ) : (
+          icon && getIcon(icon)
+        )}
+      </span>
       <span>{label}</span>
     </NavLink>
   );

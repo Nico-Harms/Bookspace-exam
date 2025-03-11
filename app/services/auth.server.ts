@@ -129,9 +129,13 @@ async function createOrGetUser(name: string, email: string, picture: string) {
     user = await User.create({
       name,
       email,
-      picture,
+      profileImage: picture,
       provider: "google",
     });
+  } else if (!user.profileImage && picture) {
+    // Update the profile image if it's not set but Google provides one
+    user.profileImage = picture;
+    await user.save();
   }
 
   return user._id.toString();
