@@ -22,12 +22,14 @@ export default function Profile({ loaderData }: { loaderData: { user: any } }) {
       <h1 className="text-2xl font-bold mb-6">Profile</h1>
 
       <div className="bg-white rounded-lg shadow mb-6">
-        <div className="p-6 text-center border-b">
-          <div className="relative mx-auto mb-4">
+        <div className="p-6 flex gap-10 text-center border-b">
+          <div className="relative w-fit">
             <Avatar src={user.profileImage} name={user.name} size="xl" />
           </div>
-          <h2 className="text-xl font-semibold">{user.name}</h2>
-          <p className="text-gray-600">{user.email}</p>
+          <div className="flex flex-col justify-center items-start">
+            <h2 className="text-xl font-semibold">{user.name}</h2>
+            <p className="text-gray-600">{user.email}</p>
+          </div>
         </div>
 
         <div className="p-6">

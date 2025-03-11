@@ -111,7 +111,7 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 mt-10">
+    <div className="max-w-4xl mx-auto p-6 ">
       <img
         src="/logo.png"
         alt="Book of the Week"
@@ -143,7 +143,7 @@ export default function Home() {
           message="Try adjusting your search or filter criteria."
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6">
           {books.map((book: BookType) => (
             <Link to={`/books/${book._id}`} key={book._id}>
               <BookCard book={book} />

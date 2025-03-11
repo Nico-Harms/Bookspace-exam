@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 
+/*===============================================
+=          Avatar component for profile pictures           =
+===============================================*/
+
 interface AvatarProps {
   src?: string | null;
   alt?: string;
@@ -19,7 +23,6 @@ export function Avatar({
 
   // Log the received src for debugging
   useEffect(() => {
-    console.log("Avatar component received src:", src);
     setImageError(false);
   }, [src]);
 
@@ -40,9 +43,6 @@ export function Avatar({
 
     // Remove @ prefix if present
     let processedSrc = src.startsWith("@") ? src.substring(1) : src;
-
-    // Log the processed URL
-    console.log("Avatar component processed src:", processedSrc);
 
     return processedSrc;
   };

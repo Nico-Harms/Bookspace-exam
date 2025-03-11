@@ -1,4 +1,4 @@
-import { useLoaderData, Form } from "react-router";
+import { useLoaderData, Form, redirect } from "react-router";
 import Book from "~/models/Book";
 import type { LoaderArgs } from "./+types";
 import type { Book as BookType } from "~/types/book";
@@ -9,6 +9,8 @@ import User from "~/models/User";
 import type { ActionFunctionArgs } from "react-router";
 import { Types } from "mongoose";
 import UserBookProgress, { ReadingStatus } from "~/models/UserBookProgress";
+import BookReview from "~/models/BookReview";
+import { BookReviews } from "~/components/books/BookReviews";
 
 /*===============================================
 =          Data Functions           =
@@ -60,6 +62,63 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
 
     await user.save();
+    // No redirect for bookmarks, just stay on the page
+  } else if (action === "addReview") {
+    const objectId = new Types.ObjectId(bookId);
+
+    // Check if user has already reviewed this book
+    const existingReview = await BookReview.findOne({
+      userId: auth._id,
+      bookId: objectId,
+    });
+
+    if (existingReview) {
+      throw new Response("You have already reviewed this book", {
+        status: 400,
+      });
+    }
+
+    // Get review data from form
+    const rating = Number(formData.get("rating"));
+    const title = (formData.get("title") as string) || undefined;
+    const comment = (formData.get("comment") as string) || undefined;
+
+    // Validate rating
+    if (!rating || rating < 1 || rating > 5) {
+      throw new Response("Rating must be between 1 and 5", { status: 400 });
+    }
+
+    // Create new review
+    const newReview = new BookReview({
+      userId: auth._id,
+      bookId: objectId,
+      rating,
+      title: title || undefined,
+      comment: comment || undefined,
+      isVerifiedPurchase: false, // Could be determined based on purchase history
+    });
+
+    // Save the review
+    await newReview.save();
+
+    // Update book rating
+    const book = await Book.findById(objectId);
+    if (book) {
+      // Calculate new average rating
+      const allReviews = await BookReview.find({ bookId: objectId });
+      const totalRating = allReviews.reduce(
+        (sum, review) => sum + review.rating,
+        0,
+      );
+      const averageRating = totalRating / allReviews.length;
+
+      book.rating = parseFloat(averageRating.toFixed(1));
+      book.ratingsCount = allReviews.length;
+      await book.save();
+    }
+
+    // Redirect to refresh the page after adding a review
+    return redirect(`/books/${bookId}`);
   }
 
   return null;
@@ -73,17 +132,43 @@ export async function loader({ request, params }: LoaderArgs) {
     throw new Response("Book ID is required", { status: 400 });
   }
 
-  const book = await Book.findById(bookId).lean();
+  const book = await Book.findById(bookId)
+    .populate({
+      path: "reviews",
+      populate: {
+        path: "userId",
+        model: "User",
+        select: "name profileImage",
+      },
+    })
+    .lean();
 
   if (!book) {
     return { book: null, bookId };
   }
+
+  // Format reviews with user data
+  const formattedReviews =
+    book.reviews?.map((review) => ({
+      ...review,
+      _id: String(review._id),
+      user: {
+        name: review.userId?.name,
+        profileImage: review.userId?.profileImage,
+      },
+    })) || [];
 
   const user = await User.findById(auth._id).lean();
   const objectId = new Types.ObjectId(bookId);
   const isBookmarked =
     user?.bookmarks?.some((id) => id.toString() === objectId.toString()) ||
     false;
+
+  // Check if user has already reviewed this book
+  const hasReviewed = await BookReview.exists({
+    userId: auth._id,
+    bookId: objectId,
+  });
 
   const similarBooks = await Book.find({
     _id: { $ne: objectId },
@@ -103,10 +188,16 @@ export async function loader({ request, params }: LoaderArgs) {
   }));
 
   return {
-    book: { ...book, _id: String(book._id) },
+    book: {
+      ...book,
+      _id: String(book._id),
+      reviews: formattedReviews,
+    },
     bookId,
     similarBooks: formattedSimilarBooks,
     isBookmarked,
+    hasReviewed: !!hasReviewed,
+    userId: String(auth._id),
   };
 }
 
@@ -183,6 +274,10 @@ function SimilarBooks({ books }: { books: BookType[] }) {
   );
 }
 
+/*===============================================
+=          Main Component           =
+===============================================*/
+
 export default function BookSingle({
   loaderData,
 }: {
@@ -191,9 +286,12 @@ export default function BookSingle({
     bookId: string;
     similarBooks: BookType[];
     isBookmarked: boolean;
+    hasReviewed: boolean;
+    userId: string;
   };
 }) {
-  const { book, bookId, similarBooks, isBookmarked } = loaderData;
+  const { book, bookId, similarBooks, isBookmarked, hasReviewed, userId } =
+    loaderData;
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!book) {
@@ -211,28 +309,12 @@ export default function BookSingle({
 
   return (
     <div className="flex max-w-4xl  mx-auto flex-col h-full bg-white">
-      <header className="flex items-center justify-between p-4 border-b">
-        <button onClick={() => window.history.back()} className="p-2">
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <BookmarkButton isBookmarked={isBookmarked} />
-      </header>
-
       <main className="flex-1 overflow-auto">
         <div className="p-4">
-          <div className="flex flex-col items-center md:flex-row gap-8">
+          <div className="flex flex-col relative items-center md:flex-row gap-8">
+            <div className="absolute top-0 right-0 cursor-pointer">
+              <BookmarkButton isBookmarked={isBookmarked} />
+            </div>
             {book.coverImage?.url && (
               <img
                 src={book.coverImage.url}
@@ -252,7 +334,7 @@ export default function BookSingle({
                   {book.genres?.[0] || "Drama"}
                 </span>
                 <div className="flex items-center gap-1">
-                  <span>4.7</span>
+                  <span>{book.rating?.toFixed(1) || "0.0"}</span>
                   <span className="text-gray-400">|</span>
                   <span>{book.pageCount} pages</span>
                 </div>
@@ -292,24 +374,9 @@ export default function BookSingle({
           <SimilarBooks books={similarBooks} />
         </div>
 
+        {/* Book Reviews Section */}
         <div className="p-4">
-          <h2 className="font-semibold mb-2">Reviews</h2>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-              <img
-                src="https://placeholder.com/32x32"
-                alt="User avatar"
-                className="w-8 h-8 rounded-full"
-              />
-              <div>
-                <p className="font-medium">Laura Nielsen</p>
-                <p className="text-sm text-gray-600">
-                  What makes The Goldfinch so compelling is Tartt's
-                  perspective...
-                </p>
-              </div>
-            </div>
-          </div>
+          <BookReviews book={book} userId={userId} hasReviewed={hasReviewed} />
         </div>
       </main>
     </div>

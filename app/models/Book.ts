@@ -43,8 +43,17 @@ const bookSchema = new Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 );
+
+// Add virtual property for reviews
+bookSchema.virtual("reviews", {
+  ref: "BookReview",
+  localField: "_id",
+  foreignField: "bookId",
+});
 
 // Create indexes for common queries
 bookSchema.index({ slug: 1 });
@@ -54,6 +63,7 @@ bookSchema.index({ genres: 1 });
 // Define the type for a Book document
 export type BookType = InferSchemaType<typeof bookSchema> & {
   _id: Types.ObjectId | string;
+  reviews?: any[]; // Add reviews to the type
 };
 
 // Create and export the model

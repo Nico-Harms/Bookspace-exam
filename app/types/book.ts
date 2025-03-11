@@ -5,6 +5,23 @@ export interface CoverImage {
   height: number;
 }
 
+// Book review type
+export interface BookReview {
+  _id: string;
+  userId: string;
+  bookId: string;
+  rating: number;
+  comment?: string;
+  title?: string;
+  isVerifiedPurchase?: boolean;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  user?: {
+    name: string;
+    profileImage?: string;
+  };
+}
+
 // Main Book type
 export interface Book {
   _id: string;
@@ -22,6 +39,7 @@ export interface Book {
   coverImage?: CoverImage | null;
   createdAt?: string | Date;
   updatedAt?: string | Date;
+  reviews?: BookReview[];
 }
 
 // Props types for our components
@@ -36,4 +54,16 @@ export interface BookInfoProps {
 export interface BookRatingProps {
   rating?: number | null;
   ratingsCount?: number | null;
+}
+
+export interface BookReviewFormProps {
+  bookId: string;
+  onReviewSubmitted?: () => void;
+}
+
+export interface StarRatingProps {
+  value: number;
+  onChange?: (rating: number) => void;
+  readOnly?: boolean;
+  size?: "sm" | "md" | "lg";
 }

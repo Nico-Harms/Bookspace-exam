@@ -5,6 +5,8 @@ import UserBookProgress, { ReadingStatus } from "~/models/UserBookProgress";
 import Book from "~/models/Book";
 import type { Book as BookType } from "~/types/book";
 import User from "~/models/User";
+import { StatsCard } from "~/components/progress/Statscard";
+import { ProgressBookCard } from "~/components/progress/ProgressBookCard";
 
 type LoaderData = {
   stats: {
@@ -154,31 +156,6 @@ function calculateStreak(progress: any[]): number {
   return streak;
 }
 
-function StatsCard({
-  title,
-  value,
-  unit,
-  description = "",
-}: {
-  title: string;
-  value: number;
-  unit: string;
-  description?: string;
-}) {
-  return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-      <p className="mt-2 text-3xl font-semibold">
-        {value}
-        <span className="text-lg font-normal text-gray-500 ml-1">{unit}</span>
-      </p>
-      {description && (
-        <p className="mt-1 text-xs text-gray-500">{description}</p>
-      )}
-    </div>
-  );
-}
-
 function BookList({
   title,
   books,
@@ -193,49 +170,10 @@ function BookList({
       <h2 className="text-xl font-bold mb-4">{title}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {books.map((book) => (
-          <BookCard key={book._id} book={book} />
+          <ProgressBookCard key={book._id} book={book} />
         ))}
       </div>
     </section>
-  );
-}
-
-function BookCard({ book }: { book: BookType & { progress?: any } }) {
-  // Extract completion date if available
-  const completionDate = book.progress?.completionDate
-    ? new Date(book.progress.completionDate).toLocaleDateString()
-    : null;
-
-  return (
-    <Link
-      to={`/progress/${book._id}`}
-      className="block bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow"
-    >
-      <div className="aspect-[2/3] relative">
-        {book.coverImage?.url ? (
-          <img
-            src={book.coverImage.url}
-            alt={book.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-            <span className="text-gray-500 text-sm">No Cover</span>
-          </div>
-        )}
-      </div>
-      <div className="p-3">
-        <h3 className="font-medium text-sm truncate">{book.title}</h3>
-        <p className="text-xs text-gray-500 truncate">
-          {book.author?.join(", ")}
-        </p>
-        {completionDate && (
-          <p className="text-xs text-green-600 mt-1">
-            Completed: {completionDate}
-          </p>
-        )}
-      </div>
-    </Link>
   );
 }
 
