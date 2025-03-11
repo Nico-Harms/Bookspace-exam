@@ -1,5 +1,6 @@
 import { Link, useRouteLoaderData } from "react-router";
-import { Avatar } from "./Avatar";
+import { Avatar } from "./avatar";
+import { Button } from "./button";
 
 interface HeaderProps {
   title?: string;
@@ -22,7 +23,11 @@ export function Header({
     <header className="bg-white border-b border-gray-200 py-4 px-6 flex items-center justify-between sticky top-0 z-10">
       <div className="flex items-center">
         {showBackButton && (
-          <Link to="/" className="mr-3">
+          <Button
+            variant="ghost"
+            onClick={() => window.history.back()}
+            className="mr-3"
+          >
             <svg
               className="w-6 h-6"
               fill="none"
@@ -36,7 +41,7 @@ export function Header({
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-          </Link>
+          </Button>
         )}
         {title && <h1 className="text-xl font-semibold">{title}</h1>}
       </div>

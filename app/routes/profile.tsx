@@ -2,7 +2,7 @@ import { Form, Link } from "react-router";
 import * as AuthService from "~/services/auth.server";
 import type { Route } from "./+types/home";
 import User from "~/models/User";
-import { Avatar } from "~/components/ui/Avatar";
+import { Avatar } from "~/components/ui/avatar";
 
 export async function loader({ request }: Route.LoaderArgs) {
   // Require authentication

@@ -1,5 +1,5 @@
 import { NavLink, useRouteLoaderData } from "react-router";
-import { Avatar } from "./Avatar";
+import { Avatar } from "./avatar";
 
 export function Navigation() {
   // Get the user data from the protected layout loader

@@ -1,10 +1,10 @@
-import { useLoaderData, Form } from "react-router";
+import { useLoaderData, Form, useSubmit } from "react-router";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import Book from "~/models/Book";
 import UserBookProgress, { ReadingStatus } from "~/models/UserBookProgress";
 import * as AuthService from "~/services/auth.server";
 import { Types } from "mongoose";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // This page expects a route parameter: /progress/:id
 export async function loader({ params, request }: LoaderFunctionArgs) {
@@ -33,6 +33,8 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       userId: userId,
       bookId: bookObjectId,
     }).lean();
+
+    console.log("Progress data:", progress);
 
     // Format data for client
     return {
@@ -67,8 +69,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     const formData = await request.formData();
     const status = formData.get("status") as ReadingStatus;
-    const pagesRead = Number(formData.get("pagesRead") || 0);
-    const readingMinutes = Number(formData.get("readingMinutes") || 0);
+    let pagesRead = Number(formData.get("pagesRead") || 0);
     const notes = (formData.get("notes") as string) || "";
 
     // Ensure we're using ObjectIds
@@ -81,36 +82,57 @@ export async function action({ request, params }: ActionFunctionArgs) {
       bookId: bookObjectId,
     });
 
+    // Get the book to know its total pages
+    const book = await Book.findById(bookObjectId);
+    if (!book) {
+      throw new Response("Book not found", { status: 404 });
+    }
+
+    // If status is COMPLETED, set pages read to the book's total pages
+    if (status === ReadingStatus.COMPLETED && book.pageCount) {
+      pagesRead = book.pageCount;
+    }
+
+    // Calculate reading minutes based on pages read
+    const readingMinutes = pagesRead * 2; // 2 minutes per page
+
     const now = new Date();
+
+    // Prepare the update data
     const updateData: {
       status: ReadingStatus;
       pagesRead: number;
       readingMinutes: number;
       notes: string;
       lastReadDate: Date;
-      startDate: Date | null;
-      completionDate: Date | null;
+      startDate?: Date | null;
+      completionDate?: Date | null;
     } = {
       status,
       pagesRead,
       readingMinutes,
       notes,
       lastReadDate: now,
-      startDate: null,
-      completionDate: null,
     };
 
-    // Set appropriate dates based on status
-    if (status === ReadingStatus.READING && !progress?.startDate) {
-      updateData.startDate = now;
+    // Handle start date
+    if (status === ReadingStatus.READING) {
+      // Only set start date if this is the first time the book is being read
+      if (!progress?.startDate) {
+        updateData.startDate = now;
+      }
     }
 
-    if (status === ReadingStatus.COMPLETED && !progress?.completionDate) {
+    // Handle completion date
+    if (status === ReadingStatus.COMPLETED) {
+      // Always set completion date when marking as completed
       updateData.completionDate = now;
+      console.log("Setting completion date:", now);
     }
 
     if (progress) {
       // Update existing progress
+      console.log("Updating progress with:", updateData);
       await UserBookProgress.updateOne({ _id: progress._id }, updateData);
     } else {
       // Create new progress record
@@ -119,6 +141,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         bookId: bookObjectId,
         ...updateData,
       });
+      console.log("Creating new progress:", newProgress);
       await newProgress.save();
     }
 
@@ -134,11 +157,59 @@ export default function ProgressSingle() {
   const [selectedStatus, setSelectedStatus] = useState(
     progress?.status || ReadingStatus.WANT_TO_READ,
   );
+  const [pagesRead, setPagesRead] = useState(progress?.pagesRead || 0);
+  const [calculatedReadingTime, setCalculatedReadingTime] = useState(0);
+  const submit = useSubmit();
+
+  // Effect to set initial pages read
+  useEffect(() => {
+    setPagesRead(progress?.pagesRead || 0);
+  }, [progress?.pagesRead]);
+
+  // Recalculate reading time whenever pages read changes
+  useEffect(() => {
+    // Simple formula - 2 minutes per page
+    const estimatedMinutes = pagesRead * 2;
+    setCalculatedReadingTime(estimatedMinutes);
+  }, [pagesRead]);
 
   // Handle status change to update UI accordingly
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedStatus(e.target.value as ReadingStatus);
+    const newStatus = e.target.value as ReadingStatus;
+    setSelectedStatus(newStatus);
+
+    // If status is changed to COMPLETED, automatically set pages read to the book's total pages
+    if (newStatus === ReadingStatus.COMPLETED && book.pageCount) {
+      setPagesRead(book.pageCount);
+    }
   };
+
+  // Handle pages read change
+  const handlePagesReadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPagesRead(Number(e.target.value));
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Get the form
+    const form = e.currentTarget;
+
+    // Create FormData
+    const formData = new FormData(form);
+
+    // If status is COMPLETED, ensure pagesRead is set to book's total
+    if (formData.get("status") === ReadingStatus.COMPLETED && book.pageCount) {
+      formData.set("pagesRead", book.pageCount.toString());
+    }
+
+    // Submit the form
+    submit(formData, { method: "post" });
+  };
+
+  // Check if the pages read field should be read-only
+  const isPagesReadDisabled = selectedStatus === ReadingStatus.COMPLETED;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -199,7 +270,7 @@ export default function ProgressSingle() {
           <h2 className="text-xl font-semibold mb-4">
             Update Reading Progress
           </h2>
-          <Form method="post" className="space-y-6">
+          <Form method="post" className="space-y-6" onSubmit={handleSubmit}>
             {/* Reading Status */}
             <div>
               <label
@@ -236,8 +307,14 @@ export default function ProgressSingle() {
                   name="pagesRead"
                   min="0"
                   max={book.pageCount || 9999}
-                  defaultValue={progress?.pagesRead || 0}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  value={pagesRead}
+                  onChange={handlePagesReadChange}
+                  disabled={isPagesReadDisabled}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                    !isPagesReadDisabled
+                      ? "focus:ring-indigo-500 focus:border-indigo-500"
+                      : "bg-gray-100"
+                  }`}
                 />
                 {book.pageCount && (
                   <span className="ml-2 text-sm text-gray-500">
@@ -245,23 +322,43 @@ export default function ProgressSingle() {
                   </span>
                 )}
               </div>
+              {isPagesReadDisabled && (
+                <p className="mt-1 text-sm text-gray-500 italic">
+                  Book marked as completed, pages read set automatically to
+                  total pages.
+                </p>
+              )}
             </div>
 
-            {/* Reading Minutes */}
+            {/* Reading Statistics (replaces Reading Minutes input) */}
             <div>
-              <label
-                htmlFor="readingMinutes"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Total Reading Time (minutes)
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Estimated Reading Time
               </label>
+              <div className="flex flex-col gap-2 bg-gray-50 p-3 rounded-md">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Minutes:</span>
+                  <span className="font-medium">
+                    {calculatedReadingTime} mins
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Hours:</span>
+                  <span className="font-medium">
+                    {(calculatedReadingTime / 60).toFixed(1)} hrs
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Based on an average reading speed of 2 minutes per page.
+                </p>
+              </div>
+
+              {/* Hidden field to store the calculated reading minutes */}
               <input
-                type="number"
+                type="hidden"
                 id="readingMinutes"
                 name="readingMinutes"
-                min="0"
-                defaultValue={progress?.readingMinutes || 0}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                value={calculatedReadingTime}
               />
             </div>
 
@@ -285,6 +382,7 @@ export default function ProgressSingle() {
             {/* Progress Information */}
             {progress && (
               <div className="bg-gray-50 p-4 rounded-md text-sm">
+                <h3 className="font-medium mb-2">Progress Info</h3>
                 {progress.startDate && (
                   <p>
                     <span className="font-semibold">Started:</span>{" "}
@@ -303,6 +401,24 @@ export default function ProgressSingle() {
                     {new Date(progress.lastReadDate).toLocaleDateString()}
                   </p>
                 )}
+                <p className="mt-2">
+                  <span className="font-semibold">Current Status:</span>{" "}
+                  <span
+                    className={
+                      progress.status === ReadingStatus.COMPLETED
+                        ? "text-green-600 font-medium"
+                        : progress.status === ReadingStatus.READING
+                          ? "text-blue-600 font-medium"
+                          : "text-gray-600"
+                    }
+                  >
+                    {progress.status === ReadingStatus.COMPLETED
+                      ? "Completed"
+                      : progress.status === ReadingStatus.READING
+                        ? "Reading"
+                        : "Want to Read"}
+                  </span>
+                </p>
               </div>
             )}
 

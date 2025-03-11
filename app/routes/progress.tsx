@@ -10,13 +10,15 @@ type LoaderData = {
   stats: {
     totalPagesRead: number;
     totalReadingMinutes: number;
+    totalReadingHours: number;
+    averageReadingSpeed: number;
     currentStreak: number;
-    booksCompletedThisMonth: number;
+    booksCompletedTotal: number;
   };
   collections: {
-    wantToRead: Array<BookType>;
-    reading: Array<BookType>;
-    completed: Array<BookType>;
+    wantToRead: Array<BookType & { progress?: any }>;
+    reading: Array<BookType & { progress?: any }>;
+    completed: Array<BookType & { progress?: any }>;
   };
 };
 
@@ -43,32 +45,39 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   // Organize books by reading status
   const collections = {
-    wantToRead: [] as Array<BookType>,
-    reading: [] as Array<BookType>,
-    completed: [] as Array<BookType>,
+    wantToRead: [] as Array<BookType & { progress?: any }>,
+    reading: [] as Array<BookType & { progress?: any }>,
+    completed: [] as Array<BookType & { progress?: any }>,
   };
 
-  // For each book, find its progress and add it to the appropriate collection
+  /*===============================================
+=          Book categories for its state            =
+===============================================*/
   formattedBooks.forEach((book) => {
     const progress = allProgress.find(
       (p) => String(p.bookId) === String(book._id),
     );
 
     if (progress) {
+      const bookWithProgress = {
+        ...book,
+        progress,
+      };
+
       switch (progress.status) {
         case ReadingStatus.WANT_TO_READ:
-          collections.wantToRead.push(book);
+          collections.wantToRead.push(bookWithProgress);
           break;
         case ReadingStatus.READING:
-          collections.reading.push(book);
+          collections.reading.push(bookWithProgress);
           break;
         case ReadingStatus.COMPLETED:
-          collections.completed.push(book);
+          collections.completed.push(bookWithProgress);
           break;
       }
     } else {
       // If no progress exists, default to "Want to Read"
-      collections.wantToRead.push(book);
+      collections.wantToRead.push({ ...book, progress: null });
     }
   });
 
@@ -76,23 +85,37 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+  /*===============================================
+  =    Famcy pancy calucations for total reading time (2 minutes per page)           =
+  ===============================================*/
+
+  const totalPagesRead = allProgress.reduce(
+    (sum, p) => sum + (p.pagesRead || 0),
+    0,
+  );
+  const totalReadingMinutes = totalPagesRead * 2; // Standard estimate of 2 minutes per page
+  const totalReadingHours = totalReadingMinutes / 60;
+
+  // Calculate average reading speed (pages per hour)
+  const averageReadingSpeed =
+    totalReadingHours > 0 ? Math.round(totalPagesRead / totalReadingHours) : 0;
+
   const stats = {
-    totalPagesRead: allProgress.reduce((sum, p) => sum + (p.pagesRead || 0), 0),
-    totalReadingMinutes: allProgress.reduce(
-      (sum, p) => sum + (p.readingMinutes || 0),
-      0,
-    ),
+    totalPagesRead,
+    totalReadingMinutes,
+    totalReadingHours,
+    averageReadingSpeed,
     currentStreak: calculateStreak(allProgress),
-    booksCompletedThisMonth: allProgress.filter(
-      (p) =>
-        p.status === ReadingStatus.COMPLETED &&
-        p.completionDate &&
-        p.completionDate >= startOfMonth,
-    ).length,
+
+    booksCompletedTotal: collections.completed.length, // Use the collection length which should be accurate
   };
 
   return { stats, collections };
 }
+
+/*===============================================
+=          Streak calucations / stats           =
+===============================================*/
 
 function calculateStreak(progress: any[]): number {
   const dates = progress
@@ -135,78 +158,84 @@ function StatsCard({
   title,
   value,
   unit,
+  description = "",
 }: {
   title: string;
   value: number;
   unit: string;
+  description?: string;
 }) {
   return (
     <div className="bg-white rounded-lg shadow p-4">
-      <h3 className="text-sm text-gray-500 mb-1">{title}</h3>
-      <div className="flex items-baseline">
-        <span className="text-2xl font-bold">{value}</span>
-        <span className="ml-1 text-gray-600">{unit}</span>
-      </div>
+      <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+      <p className="mt-2 text-3xl font-semibold">
+        {value}
+        <span className="text-lg font-normal text-gray-500 ml-1">{unit}</span>
+      </p>
+      {description && (
+        <p className="mt-1 text-xs text-gray-500">{description}</p>
+      )}
     </div>
   );
 }
 
-function BookList({ title, books }: { title: string; books: Array<BookType> }) {
+function BookList({
+  title,
+  books,
+}: {
+  title: string;
+  books: Array<BookType & { progress?: any }>;
+}) {
   if (books.length === 0) return null;
 
   return (
-    <div className="mt-8">
-      <h2 className="text-xl font-semibold mb-4">{title}</h2>
-      <div className="space-y-4">
-        {books.map((book) => {
-          console.log("Book ID:", book._id);
-          return (
-            <Link
-              to={`/progress/${book._id}`}
-              key={book._id}
-              className="flex items-center p-4 bg-white rounded-lg shadow"
-            >
-              <div className="flex-shrink-0 w-16 h-24 bg-gray-200 rounded overflow-hidden mr-4">
-                {book.coverImage?.url ? (
-                  <img
-                    src={book.coverImage.url}
-                    alt={`Cover of ${book.title}`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                    <span className="text-gray-500 text-xs">No Cover</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium">{book.title}</h3>
-                <p className="text-sm text-gray-600">
-                  {book.author?.join(", ") || "Unknown Author"}
-                </p>
-                {book.genres && book.genres.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {book.genres.slice(0, 2).map((genre, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-gray-100 rounded-full text-xs"
-                      >
-                        {genre}
-                      </span>
-                    ))}
-                    {book.genres.length > 2 && (
-                      <span className="text-xs text-gray-500">
-                        +{book.genres.length - 2} more
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Link>
-          );
-        })}
+    <section className="mt-8">
+      <h2 className="text-xl font-bold mb-4">{title}</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {books.map((book) => (
+          <BookCard key={book._id} book={book} />
+        ))}
       </div>
-    </div>
+    </section>
+  );
+}
+
+function BookCard({ book }: { book: BookType & { progress?: any } }) {
+  // Extract completion date if available
+  const completionDate = book.progress?.completionDate
+    ? new Date(book.progress.completionDate).toLocaleDateString()
+    : null;
+
+  return (
+    <Link
+      to={`/progress/${book._id}`}
+      className="block bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow"
+    >
+      <div className="aspect-[2/3] relative">
+        {book.coverImage?.url ? (
+          <img
+            src={book.coverImage.url}
+            alt={book.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+            <span className="text-gray-500 text-sm">No Cover</span>
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <h3 className="font-medium text-sm truncate">{book.title}</h3>
+        <p className="text-xs text-gray-500 truncate">
+          {book.author?.join(", ")}
+        </p>
+        {completionDate && (
+          <p className="text-xs text-green-600 mt-1">
+            Completed: {completionDate}
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }
 
@@ -217,32 +246,64 @@ export default function Progress() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Reading Progress</h1>
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard
-          title="Total Pages Read"
-          value={stats.totalPagesRead}
-          unit="pages"
-        />
-        <StatsCard
-          title="Reading Time"
-          value={Math.round(stats.totalReadingMinutes / 60)}
-          unit="hours"
-        />
-        <StatsCard
-          title="Current Streak"
-          value={stats.currentStreak}
-          unit="days"
-        />
-        <StatsCard
-          title="Completed This Month"
-          value={stats.booksCompletedThisMonth}
-          unit="books"
-        />
+      {/* Reading Statistics */}
+      <section>
+        <h2 className="text-lg font-semibold mb-3">Reading Statistics</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatsCard
+            title="Total Pages Read"
+            value={stats.totalPagesRead}
+            unit="pages"
+          />
+          <StatsCard
+            title="Reading Time"
+            value={Math.round(stats.totalReadingHours * 10) / 10}
+            unit="hours"
+          />
+          <StatsCard
+            title="Reading Speed"
+            value={stats.averageReadingSpeed}
+            unit="pgs/hr"
+          />
+          <StatsCard
+            title="Books Completed"
+            value={stats.booksCompletedTotal}
+            unit={stats.booksCompletedTotal === 1 ? "book" : "books"}
+          />
+        </div>
       </section>
 
-      <BookList title="Currently Reading" books={collections.reading} />
-      <BookList title="Want to Read" books={collections.wantToRead} />
-      <BookList title="Completed Books" books={collections.completed} />
+      {/* Book Collections */}
+      <div className="mt-8">
+        {collections.reading.length > 0 && (
+          <BookList title="Currently Reading" books={collections.reading} />
+        )}
+        {collections.wantToRead.length > 0 && (
+          <BookList title="Want to Read" books={collections.wantToRead} />
+        )}
+        {collections.completed.length > 0 && (
+          <BookList title="Completed Books" books={collections.completed} />
+        )}
+
+        {collections.reading.length === 0 &&
+          collections.wantToRead.length === 0 &&
+          collections.completed.length === 0 && (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <h3 className="text-lg font-medium text-gray-600 mb-2">
+                No books in your collection yet
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Explore the library and add books to your reading list
+              </p>
+              <Link
+                to="/"
+                className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Explore Books
+              </Link>
+            </div>
+          )}
+      </div>
     </div>
   );
 }
