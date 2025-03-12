@@ -1,5 +1,11 @@
 import { useState } from "react";
 import { Form, useSubmit } from "react-router";
+import { ProgressBar } from "~/components/ui/ProgressBar";
+import {
+  calculateReadingProgress,
+  calculatePagesLeft,
+  calculateDailyTarget,
+} from "~/utils/bookProgress";
 
 interface ReadingGoalBannerProps {
   goalPagesPerWeek: number;
@@ -18,26 +24,13 @@ export function ReadingGoalBanner({
   const [showEditForm, setShowEditForm] = useState(isEditMode);
   const submit = useSubmit();
 
-  // Calculate progress
-  const progressPercentage = goalPagesPerWeek
-    ? Math.min(100, Math.round((pagesReadThisWeek / goalPagesPerWeek) * 100))
-    : 0;
-
-  // Calculate pages left to reach goal
-  const pagesLeft = Math.max(0, goalPagesPerWeek - pagesReadThisWeek);
-
-  // Calculate daily pages needed to reach goal
-  const dailyPagesNeeded =
-    daysLeftInWeek > 0 ? Math.ceil(pagesLeft / daysLeftInWeek) : 0;
-
-  // Get color based on progress - using warm, earthy tones
-  const getProgressColor = () => {
-    if (progressPercentage >= 100) return "bg-amber-600";
-    if (progressPercentage >= 75) return "bg-amber-500";
-    if (progressPercentage >= 50) return "bg-amber-400";
-    if (progressPercentage >= 25) return "bg-orange-300";
-    return "bg-orange-200";
-  };
+  // Calculate progress using utility functions
+  const progressPercentage = calculateReadingProgress(
+    pagesReadThisWeek,
+    goalPagesPerWeek,
+  );
+  const pagesLeft = calculatePagesLeft(pagesReadThisWeek, goalPagesPerWeek);
+  const dailyPagesNeeded = calculateDailyTarget(pagesLeft, daysLeftInWeek);
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -120,12 +113,14 @@ export function ReadingGoalBanner({
                   {progressPercentage}% complete
                 </span>
               </div>
-              <div className="w-full h-4 bg-[#3A2825] rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${getProgressColor()}`}
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
+
+              {/* Using the common ProgressBar component */}
+              <ProgressBar
+                percentage={progressPercentage}
+                variant="goal"
+                height="lg"
+                showLabels={false}
+              />
             </div>
 
             {/* Stats display */}

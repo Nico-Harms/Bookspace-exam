@@ -1,10 +1,17 @@
-import { useLoaderData, Form, useSubmit } from "react-router";
+import {
+  useLoaderData,
+  Form,
+  useSubmit,
+  useNavigation,
+  useActionData,
+} from "react-router";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import Book from "~/models/Book";
 import UserBookProgress, { ReadingStatus } from "~/models/UserBookProgress";
 import * as AuthService from "~/services/auth.server";
 import { Types } from "mongoose";
 import { useState, useEffect } from "react";
+import { Toaster, toast } from "sonner";
 
 // This page expects a route parameter: /progress/:id
 export async function loader({ params, request }: LoaderFunctionArgs) {
@@ -88,6 +95,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
       throw new Response("Book not found", { status: 404 });
     }
 
+    // Store previous values for comparison
+    const previousStatus = progress?.status;
+    const previousPagesRead = progress?.pagesRead || 0;
+
     // If status is COMPLETED, set pages read to the book's total pages
     if (status === ReadingStatus.COMPLETED && book.pageCount) {
       pagesRead = book.pageCount;
@@ -145,21 +156,108 @@ export async function action({ request, params }: ActionFunctionArgs) {
       await newProgress.save();
     }
 
-    return { success: true };
+    // Determine what aspects have changed for the success message
+    const statusChanged = previousStatus !== status;
+    const pagesReadChanged = previousPagesRead !== pagesRead;
+
+    return {
+      success: true,
+      message: getSuccessMessage(
+        status,
+        statusChanged,
+        pagesReadChanged,
+        previousPagesRead,
+        pagesRead,
+        book.title,
+      ),
+    };
   } catch (error) {
     console.error("Error in progress-single action:", error);
-    return { error: "Failed to update progress" };
+    return {
+      error: "Failed to update progress",
+      message:
+        "There was an error updating your reading progress. Please try again.",
+    };
   }
+}
+
+// Helper function to get success message based on reading status and changes
+function getSuccessMessage(
+  status: ReadingStatus,
+  statusChanged: boolean,
+  pagesReadChanged: boolean,
+  previousPages: number,
+  newPages: number,
+  bookTitle?: string,
+): string {
+  // If status changed, prioritize that message
+  if (statusChanged) {
+    switch (status) {
+      case ReadingStatus.COMPLETED:
+        return `Congratulations! "${bookTitle}" marked as completed. 🎉`;
+      case ReadingStatus.READING:
+        return `"${bookTitle}" marked as currently reading. Happy reading! 📚`;
+      case ReadingStatus.WANT_TO_READ:
+        return `"${bookTitle}" added to your reading list!`;
+    }
+  }
+
+  // If only pages read changed, create a message about that
+  if (pagesReadChanged) {
+    const pagesAdded = newPages - previousPages;
+
+    if (pagesAdded > 0) {
+      return `Great progress! ${pagesAdded} page${pagesAdded !== 1 ? "s" : ""} added to your reading progress.`;
+    } else if (pagesAdded < 0) {
+      return `Reading progress updated. Pages read adjusted by ${Math.abs(pagesAdded)}.`;
+    }
+  }
+
+  // Default message if nothing specific changed
+  return "Reading progress updated successfully!";
 }
 
 export default function ProgressSingle() {
   const { book, progress } = useLoaderData<typeof loader>();
+  const actionData = useActionData<{
+    success?: boolean;
+    error?: string;
+    message?: string;
+  }>();
   const [selectedStatus, setSelectedStatus] = useState(
     progress?.status || ReadingStatus.WANT_TO_READ,
   );
   const [pagesRead, setPagesRead] = useState(progress?.pagesRead || 0);
   const [calculatedReadingTime, setCalculatedReadingTime] = useState(0);
   const submit = useSubmit();
+  const navigation = useNavigation();
+
+  // Show toast when action data changes
+  useEffect(() => {
+    if (actionData) {
+      if (actionData.success) {
+        // Dismiss any loading toasts first
+        toast.dismiss();
+
+        // Show success toast with auto-dismiss after 4 seconds
+        toast.success(actionData.message || "Progress updated successfully!", {
+          duration: 4000,
+          className:
+            "bg-gradient-to-r from-green-50 to-green-100 border-l-4 border-green-600",
+        });
+      } else if (actionData.error) {
+        // Dismiss any loading toasts first
+        toast.dismiss();
+
+        // Show error toast that stays until dismissed
+        toast.error(actionData.message || "Failed to update progress", {
+          duration: Infinity, // Stay until dismissed
+          className:
+            "bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-600",
+        });
+      }
+    }
+  }, [actionData]);
 
   // Effect to set initial pages read
   useEffect(() => {
@@ -203,11 +301,34 @@ export default function ProgressSingle() {
 
     // Create FormData
     const formData = new FormData(form);
+    const formStatus = formData.get("status") as ReadingStatus;
+    const formPagesRead = Number(formData.get("pagesRead") || 0);
 
     // If status is COMPLETED, ensure pagesRead is set to book's total
-    if (formData.get("status") === ReadingStatus.COMPLETED && book.pageCount) {
+    if (formStatus === ReadingStatus.COMPLETED && book.pageCount) {
       formData.set("pagesRead", book.pageCount.toString());
     }
+
+    // Determine what's being updated for a more specific loading message
+    let loadingMessage = "Updating reading progress...";
+
+    // If status is changing
+    if (formStatus !== progress?.status) {
+      if (formStatus === ReadingStatus.COMPLETED) {
+        loadingMessage = "Marking book as completed...";
+      } else if (formStatus === ReadingStatus.READING) {
+        loadingMessage = "Marking book as currently reading...";
+      } else if (formStatus === ReadingStatus.WANT_TO_READ) {
+        loadingMessage = "Adding book to your reading list...";
+      }
+    }
+    // Otherwise if only pages are changing
+    else if (formPagesRead !== progress?.pagesRead) {
+      loadingMessage = "Updating page progress...";
+    }
+
+    // Show a loading toast
+    toast.loading(loadingMessage);
 
     // Submit the form
     submit(formData, { method: "post" });
@@ -218,6 +339,21 @@ export default function ProgressSingle() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      <Toaster
+        position="bottom-right"
+        theme="light"
+        closeButton={true}
+        richColors={true}
+        toastOptions={{
+          style: {
+            borderRadius: "0.5rem",
+            padding: "1rem",
+            maxWidth: "400px",
+            boxShadow:
+              "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          },
+        }}
+      />
       <div className="flex flex-col md:flex-row gap-8">
         {/* Book Information */}
         <div className="flex flex-col items-center md:w-1/3">
@@ -481,9 +617,16 @@ export default function ProgressSingle() {
             <div>
               <button
                 type="submit"
-                className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                disabled={navigation.state === "submitting"}
+                className={`w-full py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  navigation.state === "submitting"
+                    ? "bg-indigo-400 cursor-not-allowed"
+                    : "bg-indigo-600 text-white hover:bg-indigo-700"
+                }`}
               >
-                Save Progress
+                {navigation.state === "submitting"
+                  ? "Saving..."
+                  : "Save Progress"}
               </button>
             </div>
           </Form>

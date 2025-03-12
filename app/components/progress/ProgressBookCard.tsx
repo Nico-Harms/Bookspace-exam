@@ -1,9 +1,11 @@
 import { Link } from "react-router";
-import type { Book as BookType } from "~/types/book";
 import { ReadingStatus } from "~/models/UserBookProgress";
+import { ProgressBar } from "~/components/ui/ProgressBar";
+import { calculateReadingProgress } from "~/utils/bookProgress";
+import type { BookWithProgress } from "~/types/bookProgress";
 
 interface ProgressBookCardProps {
-  book: BookType & { progress?: any };
+  book: BookWithProgress;
 }
 
 export function ProgressBookCard({ book }: ProgressBookCardProps) {
@@ -12,15 +14,16 @@ export function ProgressBookCard({ book }: ProgressBookCardProps) {
     ? new Date(book.progress.completionDate).toLocaleDateString()
     : null;
 
-  // Calculate reading progress percentage
+  // Determine reading status
   const isReading = book.progress?.status === ReadingStatus.READING;
   const isWantToRead = book.progress?.status === ReadingStatus.WANT_TO_READ;
+
+  // Extract values for progress calculation
   const pagesRead = book.progress?.pagesRead || 0;
   const totalPages = book.pageCount || 0;
-  const progressPercentage =
-    totalPages > 0
-      ? Math.min(100, Math.round((pagesRead / totalPages) * 100))
-      : 0;
+
+  // Calculate progress percentage
+  const progressPercentage = calculateReadingProgress(pagesRead, totalPages);
 
   return (
     <Link
@@ -56,46 +59,26 @@ export function ProgressBookCard({ book }: ProgressBookCardProps) {
         {/* Show progress bar for books being read */}
         {isReading && totalPages > 0 && (
           <div className="mt-2">
-            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-600"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px] text-gray-500">
-                {pagesRead} pages
-              </span>
-              <span className="text-[10px] text-indigo-600 font-medium">
-                {progressPercentage}%
-              </span>
-            </div>
+            <ProgressBar
+              percentage={progressPercentage}
+              variant="reading"
+              labelText={`${pagesRead} of ${totalPages} pages (${progressPercentage}%)`}
+            />
           </div>
         )}
 
         {/* Show progress bar for "Want to Read" books */}
         {isWantToRead && totalPages > 0 && (
           <div className="mt-2">
-            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              {pagesRead > 0 ? (
-                <div
-                  className="h-full bg-gradient-to-r from-blue-400 to-teal-500"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              ) : (
-                <div className="h-full bg-gray-300 w-0"></div>
-              )}
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px] text-gray-500">
-                {pagesRead > 0 ? `${pagesRead} pages` : "Not started"}
-              </span>
-              {pagesRead > 0 && (
-                <span className="text-[10px] text-blue-600 font-medium">
-                  {progressPercentage}%
-                </span>
-              )}
-            </div>
+            <ProgressBar
+              percentage={progressPercentage}
+              variant="wantToRead"
+              labelText={
+                pagesRead > 0
+                  ? `${pagesRead} of ${totalPages} pages`
+                  : "Not started"
+              }
+            />
           </div>
         )}
       </div>
