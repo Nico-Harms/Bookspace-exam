@@ -8,36 +8,36 @@ if (!MONGODB_URL) {
   );
 }
 
-export default function connectDb() {
-  // In development, overwrite models to pick up schema changes
-  if (NODE_ENV === "development") {
-    mongoose.set("overwriteModels", true);
-  }
+export default async function connectDb() {
+  try {
+    // In development, overwrite models to pick up schema changes
+    if (NODE_ENV === "development") {
+      mongoose.set("overwriteModels", true);
+    }
 
-  // Reuse existing connection if available
-  const readyState = mongoose.connection.readyState;
-  if (readyState > 0) {
-    console.log("Mongoose: Re-using existing connection");
-    return;
-  }
+    // Reuse existing connection if available
+    const readyState = mongoose.connection.readyState;
+    if (readyState === 1) {
+      return mongoose.connection;
+    }
 
-  // Set up connection event handlers
-  mongoose.connection.on("error", (error) => {
-    console.error("Mongoose error:", error);
-  });
+    // Set up connection options for better reliability
+    const options = {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4,
+      retryWrites: true,
+    };
 
-  mongoose.connection.on("connected", () => {
+    // Create the connection
+    const conn = await mongoose.connect(MONGODB_URL as string, options);
+
     console.log("Mongoose: Connected to MongoDB");
-  });
 
-  mongoose.connection.on("disconnected", () => {
-    console.log("Mongoose: Disconnected from MongoDB");
-  });
-
-  // Create the connection
-  mongoose.connect(MONGODB_URL as string).catch((error) => {
-    console.error("Connection error:", error);
-  });
-
-  console.log("Mongoose: Connection attempt initiated to", MONGODB_URL);
+    return conn;
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    throw error;
+  }
 }

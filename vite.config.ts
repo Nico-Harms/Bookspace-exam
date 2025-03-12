@@ -7,5 +7,16 @@ export default defineConfig(({ command }) => ({
   ssr: {
     noExternal: command === "build" ? true : undefined,
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          ui: ["@headlessui/react", "@heroicons/react"],
+        },
+      },
+    },
+  },
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
 }));
