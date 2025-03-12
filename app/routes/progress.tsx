@@ -1,5 +1,5 @@
-import { Link, useLoaderData } from "react-router";
-import type { LoaderFunctionArgs } from "react-router";
+import { Link, useLoaderData, useSubmit } from "react-router";
+import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import * as AuthService from "~/services/auth.server";
 import UserBookProgress, { ReadingStatus } from "~/models/UserBookProgress";
 import Book from "~/models/Book";
@@ -7,6 +7,13 @@ import type { Book as BookType } from "~/types/book";
 import User from "~/models/User";
 import { StatsCard } from "~/components/progress/StatsCard";
 import { ProgressBookCard } from "~/components/progress/ProgressBookCard";
+import { ReadingGoalBanner } from "~/components/progress/ReadingGoalBanner";
+import ReadingGoal from "~/models/ReadingGoal";
+import { useState } from "react";
+
+/*===============================================
+=          Loader data type           =
+===============================================*/
 
 type LoaderData = {
   stats: {
@@ -22,7 +29,66 @@ type LoaderData = {
     reading: Array<BookType & { progress?: any }>;
     completed: Array<BookType & { progress?: any }>;
   };
+  readingGoal: {
+    goalPagesPerWeek: number;
+    pagesReadThisWeek: number;
+    daysLeftInWeek: number;
+  };
 };
+
+/*===============================================
+=          Action function           =
+===============================================*/
+
+export async function action({ request }: ActionFunctionArgs) {
+  try {
+    const auth = await AuthService.requireAuth(request);
+    const formData = await request.formData();
+
+    const goalPagesPerWeek = Number(formData.get("goalPagesPerWeek"));
+
+    if (isNaN(goalPagesPerWeek) || goalPagesPerWeek < 1) {
+      return { error: "Please enter a valid goal (minimum 1 page)" };
+    }
+
+    // Calculate the start of the current week (Sunday)
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    // Find existing goal for this user
+    const existingGoal = await ReadingGoal.findOne({
+      userId: auth._id,
+    });
+
+    if (existingGoal) {
+      // Update existing goal
+      existingGoal.pagesPerWeek = goalPagesPerWeek;
+      existingGoal.weekStartDate = startOfWeek;
+      existingGoal.lastUpdated = now;
+      await existingGoal.save();
+    } else {
+      // Create new goal
+      await ReadingGoal.create({
+        userId: auth._id,
+        pagesPerWeek: goalPagesPerWeek,
+        weekStartDate: startOfWeek,
+        lastUpdated: now,
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating reading goal:", error);
+    return { error: "Failed to update reading goal" };
+  }
+}
+
+/*===============================================
+=          Loader function           =
+===============================================*/
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const auth = await AuthService.requireAuth(request);
@@ -102,17 +168,71 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const averageReadingSpeed =
     totalReadingHours > 0 ? Math.round(totalPagesRead / totalReadingHours) : 0;
 
+  // Get or create reading goal
+  const readingGoalData = await getReadingGoalData(
+    String(auth._id),
+    allProgress,
+  );
+
   const stats = {
     totalPagesRead,
     totalReadingMinutes,
     totalReadingHours,
     averageReadingSpeed,
     currentStreak: calculateStreak(allProgress),
-
     booksCompletedTotal: collections.completed.length, // Use the collection length which should be accurate
   };
 
-  return { stats, collections };
+  return { stats, collections, readingGoal: readingGoalData };
+}
+
+/*===============================================
+=          Reading goal data           =
+===============================================*/
+async function getReadingGoalData(userId: string, allProgress: any[]) {
+  // Find user's reading goal
+  const goal = await ReadingGoal.findOne({ userId }).lean();
+
+  // Default to 60 pages per week if no goal is set
+  const goalPagesPerWeek = goal?.pagesPerWeek || 60;
+
+  // Calculate current week's start and end dates
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - dayOfWeek);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  // Calculate days left in the week
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+  const daysLeftInWeek = Math.ceil(
+    (endOfWeek.getTime() - now.getTime()) / millisecondsPerDay,
+  );
+
+  // Calculate pages read this week
+  let pagesReadThisWeek = 0;
+
+  allProgress.forEach((progress) => {
+    if (progress.lastReadDate) {
+      const lastReadDate = new Date(progress.lastReadDate);
+      if (lastReadDate >= startOfWeek && lastReadDate <= endOfWeek) {
+        // This is a simplification - ideally we'd track page progress by date
+        // For a more accurate system, we'd need to store daily reading logs
+        pagesReadThisWeek += progress.pagesRead || 0;
+      }
+    }
+  });
+
+  // Return the reading goal data
+  return {
+    goalPagesPerWeek,
+    pagesReadThisWeek,
+    daysLeftInWeek,
+  };
 }
 
 /*===============================================
@@ -178,11 +298,20 @@ function BookList({
 }
 
 export default function Progress() {
-  const { stats, collections } = useLoaderData<LoaderData>();
+  const { stats, collections, readingGoal } = useLoaderData<LoaderData>();
+  const [showGoalForm, setShowGoalForm] = useState(false);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Reading Progress</h1>
+
+      {/* Reading Goal Banner */}
+      <ReadingGoalBanner
+        goalPagesPerWeek={readingGoal.goalPagesPerWeek}
+        pagesReadThisWeek={readingGoal.pagesReadThisWeek}
+        daysLeftInWeek={readingGoal.daysLeftInWeek}
+        isEditMode={!readingGoal.goalPagesPerWeek}
+      />
 
       {/* Reading Statistics */}
       <section>

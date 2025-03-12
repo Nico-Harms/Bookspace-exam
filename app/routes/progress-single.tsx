@@ -173,6 +173,11 @@ export default function ProgressSingle() {
     setCalculatedReadingTime(estimatedMinutes);
   }, [pagesRead]);
 
+  // Calculate reading progress percentage for the progress bar
+  const readingProgressPercentage = book.pageCount
+    ? Math.min(100, Math.round((pagesRead / book.pageCount) * 100))
+    : 0;
+
   // Handle status change to update UI accordingly
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as ReadingStatus;
@@ -184,7 +189,7 @@ export default function ProgressSingle() {
     }
   };
 
-  // Handle pages read change
+  // Handle pages read change from slider or number input
   const handlePagesReadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPagesRead(Number(e.target.value));
   };
@@ -300,28 +305,67 @@ export default function ProgressSingle() {
               >
                 Pages Read
               </label>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  id="pagesRead"
-                  name="pagesRead"
-                  min="0"
-                  max={book.pageCount || 9999}
-                  value={pagesRead}
-                  onChange={handlePagesReadChange}
-                  disabled={isPagesReadDisabled}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
-                    !isPagesReadDisabled
-                      ? "focus:ring-indigo-500 focus:border-indigo-500"
-                      : "bg-gray-100"
-                  }`}
-                />
-                {book.pageCount && (
-                  <span className="ml-2 text-sm text-gray-500">
-                    of {book.pageCount}
-                  </span>
-                )}
+
+              {/* Progress Bar - Show only when status is READING */}
+              {selectedStatus === ReadingStatus.READING && book.pageCount && (
+                <div className="mb-4">
+                  <div className="w-full bg-gray-200 rounded-full h-4 mb-1 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300 ease-in-out"
+                      style={{ width: `${readingProgressPercentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>0%</span>
+                    <span>{readingProgressPercentage}% complete</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Slider and Input Combination */}
+              <div className="space-y-2">
+                {/* Slider */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="range"
+                    id="pagesReadSlider"
+                    min="0"
+                    max={book.pageCount || 9999}
+                    value={pagesRead}
+                    onChange={handlePagesReadChange}
+                    disabled={isPagesReadDisabled}
+                    className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer ${
+                      isPagesReadDisabled ? "opacity-70" : ""
+                    }`}
+                  />
+                </div>
+
+                {/* Numeric display with increment/decrement */}
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    id="pagesRead"
+                    name="pagesRead"
+                    min="0"
+                    max={book.pageCount || 9999}
+                    value={pagesRead}
+                    onChange={handlePagesReadChange}
+                    disabled={isPagesReadDisabled}
+                    className={`w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                      !isPagesReadDisabled
+                        ? "focus:ring-indigo-500 focus:border-indigo-500"
+                        : "bg-gray-100"
+                    }`}
+                  />
+                  {book.pageCount && (
+                    <span className="ml-2 text-sm text-gray-500">
+                      of {book.pageCount} pages
+                    </span>
+                  )}
+                </div>
               </div>
+
               {isPagesReadDisabled && (
                 <p className="mt-1 text-sm text-gray-500 italic">
                   Book marked as completed, pages read set automatically to
@@ -383,6 +427,17 @@ export default function ProgressSingle() {
             {progress && (
               <div className="bg-gray-50 p-4 rounded-md text-sm">
                 <h3 className="font-medium mb-2">Progress Info</h3>
+
+                {/* Add reading progress percentage for READING status */}
+                {selectedStatus === ReadingStatus.READING && book.pageCount && (
+                  <p className="mb-2">
+                    <span className="font-semibold">Progress:</span>{" "}
+                    <span className="font-medium text-blue-600">
+                      {readingProgressPercentage}% complete
+                    </span>
+                  </p>
+                )}
+
                 {progress.startDate && (
                   <p>
                     <span className="font-semibold">Started:</span>{" "}
