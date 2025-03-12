@@ -1,3 +1,0 @@
-{
-  "buildCommand": "npm install && npm install --save-dev @tailwindcss/vite && npm run build"
-}
