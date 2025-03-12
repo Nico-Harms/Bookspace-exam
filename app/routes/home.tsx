@@ -12,6 +12,7 @@ import {
   type SortOption,
 } from "~/utils/bookFilters";
 import { BookOfTheWeek } from "~/components/books/BookOfTheWeek";
+import { motion, AnimatePresence } from "framer-motion";
 
 /*===============================================
 =          Types          =
@@ -138,6 +139,35 @@ export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const submit = useSubmit();
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 50, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 25 },
+    },
+  };
+
+  const fadeInUpVariant = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" },
+    },
+  };
+
   // Handle filter changes
   const handleGenreChange = (genre: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -166,46 +196,131 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 ">
-      <img
-        src="/logo.png"
-        alt="Book of the Week"
-        className="w-[150px] h-auto mx-auto"
-      />
+    <motion.div
+      className="max-w-4xl mx-auto p-6"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex justify-center mb-4"
+      >
+        <motion.img
+          src="/logo.png"
+          alt="Book of the Week"
+          className="w-[150px] h-auto mx-auto"
+          whileHover={{ scale: 1.05 }}
+          transition={{ type: "spring", stiffness: 300 }}
+        />
+      </motion.div>
 
-      <h1 className="headline font-bold mb-6">Book of the week</h1>
-      <BookOfTheWeek book={bookOfTheWeek} />
+      <motion.h1 className="headline font-bold mb-6" variants={fadeInUpVariant}>
+        Book of the week
+      </motion.h1>
+
+      <motion.div variants={fadeInUpVariant} initial="hidden" animate="visible">
+        <BookOfTheWeek book={bookOfTheWeek} />
+      </motion.div>
+
       {/* Filter Section */}
-      <BookFilter
-        genres={genres}
-        selectedGenre={currentFilters.genre}
-        onGenreChange={handleGenreChange}
-        sortBy={currentFilters.sortBy}
-        onSortChange={handleSortChange}
-        showSearch={true}
-        searchQuery={currentFilters.search}
-        onSearchChange={handleSearchChange}
-        className="mb-8"
-      />
+      <motion.div
+        variants={fadeInUpVariant}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.2 }}
+      >
+        <BookFilter
+          genres={genres}
+          selectedGenre={currentFilters.genre}
+          onGenreChange={handleGenreChange}
+          sortBy={currentFilters.sortBy}
+          onSortChange={handleSortChange}
+          showSearch={true}
+          searchQuery={currentFilters.search}
+          onSearchChange={handleSearchChange}
+          className="mb-8"
+        />
+      </motion.div>
 
       {/* Book results */}
-      <div>
-        <h2 className="headline py-5">Look for your next favorite book</h2>
-      </div>
+      <motion.div
+        variants={fadeInUpVariant}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.3 }}
+      >
+        <motion.h2
+          className="headline py-5"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+        >
+          Look for your next favorite book
+        </motion.h2>
+      </motion.div>
+
       {books.length === 0 ? (
-        <EmptyState
-          title="No books found"
-          message="Try adjusting your search or filter criteria."
-        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          <EmptyState
+            title="No books found"
+            message="Try adjusting your search or filter criteria."
+          />
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6">
-          {books.map((book: BookType) => (
-            <Link to={`/books/${book._id}`} key={book._id}>
-              <BookCard book={book} />
-            </Link>
-          ))}
-        </div>
+        <motion.div
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.06,
+                delayChildren: 0.2,
+              },
+            },
+          }}
+          initial="hidden"
+          animate="visible"
+        >
+          <AnimatePresence>
+            {books.map((book: BookType, index) => (
+              <motion.div
+                key={book._id}
+                variants={{
+                  hidden: { y: 60, opacity: 0 },
+                  visible: {
+                    y: 0,
+                    opacity: 1,
+                    transition: {
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25,
+                    },
+                  },
+                }}
+                exit={{ opacity: 0, y: 20 }}
+                whileHover={{
+                  y: -5,
+                  scale: 1.03,
+                  transition: { duration: 0.2 },
+                }}
+                className="mb-4"
+              >
+                <Link to={`/books/${book._id}`}>
+                  <BookCard book={book} />
+                </Link>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
