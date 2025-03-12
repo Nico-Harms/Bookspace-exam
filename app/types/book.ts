@@ -40,6 +40,7 @@ export interface Book {
   createdAt?: string | Date;
   updatedAt?: string | Date;
   reviews?: BookReview[];
+  averageRating?: number;
 }
 
 // Props types for our components

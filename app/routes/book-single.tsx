@@ -11,6 +11,7 @@ import { Types } from "mongoose";
 import UserBookProgress, { ReadingStatus } from "~/models/UserBookProgress";
 import BookReview from "~/models/BookReview";
 import { BookReviews } from "~/components/books/BookReviews";
+import { BookRating } from "~/components/books/BookRating";
 
 /*===============================================
 =          Data Functions           =
@@ -322,19 +323,24 @@ export default function BookSingle({
                 className="w-5/6 h-full object-fill rounded-lg shadow-lg max-w-[400px]"
               />
             )}
-            <div className="flex flex-col justify-between">
+
+            <div className="flex flex-col gap-10 justify-between">
               <div className="max-w-[90vw]">
                 <h1 className="headline font-bold leading-tight">
                   {book.title}
                 </h1>
+                <BookRating
+                  rating={book.rating}
+                  ratingsCount={book.ratingsCount}
+                />
                 <p className="text-gray-600 mt-2">{book.author?.join(", ")}</p>
               </div>
+
               <div className="flex gap-2">
                 <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">
                   {book.genres?.[0] || "Drama"}
                 </span>
                 <div className="flex items-center gap-1">
-                  <span>{book.rating?.toFixed(1) || "0.0"}</span>
                   <span className="text-gray-400">|</span>
                   <span>{book.pageCount} pages</span>
                 </div>

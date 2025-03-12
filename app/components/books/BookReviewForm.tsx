@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Form } from "react-router";
 import { StarRating } from "~/components/ui/StarRating";
 import type { BookReviewFormProps } from "~/types/book";
+import { Button } from "../ui/button";
 
 export function BookReviewForm({
   bookId,
@@ -93,13 +94,13 @@ export function BookReviewForm({
         </div>
 
         <div>
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting || rating === 0}
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-300"
+            className="w-full"
           >
             {isSubmitting ? "Submitting..." : "Submit Review"}
-          </button>
+          </Button>
         </div>
       </Form>
     </div>

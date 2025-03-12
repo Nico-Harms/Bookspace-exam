@@ -20,6 +20,7 @@ import { BookOfTheWeek } from "~/components/books/BookOfTheWeek";
 interface LoaderData {
   books: BookType[];
   genres: string[];
+  bookOfTheWeek: BookType | null;
   currentFilters: {
     genre: string;
     sortBy: SortOption;
@@ -42,7 +43,58 @@ export async function loader({ request }: Route.LoaderArgs) {
       searchQuery: url.searchParams.get("q") || "",
     };
 
-    // Build query using our utility function
+    // Calculate date range for past week
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Find book of the week based on review popularity
+    const booksWithReviews = await Book.aggregate([
+      {
+        $lookup: {
+          from: "bookreviews", // Collection name for reviews
+          localField: "_id",
+          foreignField: "bookId",
+          as: "allReviews",
+        },
+      },
+      {
+        $addFields: {
+          weeklyReviews: {
+            $filter: {
+              input: "$allReviews",
+              as: "review",
+              cond: { $gte: ["$$review.createdAt", oneWeekAgo] },
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          reviewCount: { $size: "$weeklyReviews" },
+          averageRating: { $avg: "$weeklyReviews.rating" },
+        },
+      },
+      {
+        $match: {
+          reviewCount: { $gt: 0 }, // Only include books with reviews
+        },
+      },
+      {
+        $sort: {
+          reviewCount: -1, // Sort by number of reviews
+        },
+      },
+      {
+        $limit: 1,
+      },
+    ]);
+
+    const bookOfTheWeek =
+      booksWithReviews.length > 0
+        ? formatBookDocuments(booksWithReviews)[0]
+        : null;
+
+    // Build query using our utility function for regular book listing
     const { query, sort } = buildBookQuery(filterOptions);
 
     // Fetch filtered and sorted books
@@ -54,6 +106,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     return {
       books: formatBookDocuments(books),
       genres: allGenres,
+      bookOfTheWeek,
       currentFilters: {
         genre: filterOptions.selectedGenre,
         sortBy: filterOptions.sortBy,
@@ -65,6 +118,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     return {
       books: [],
       genres: [],
+      bookOfTheWeek: null,
       currentFilters: {
         genre: "",
         sortBy: "createdAt" as SortOption,
@@ -79,7 +133,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 ===============================================*/
 
 export default function Home() {
-  const { books, genres, currentFilters } = useLoaderData<LoaderData>();
+  const { books, genres, bookOfTheWeek, currentFilters } =
+    useLoaderData<LoaderData>();
   const [searchParams, setSearchParams] = useSearchParams();
   const submit = useSubmit();
 
@@ -119,7 +174,7 @@ export default function Home() {
       />
 
       <h1 className="headline font-bold mb-6">Book of the week</h1>
-      <BookOfTheWeek books={books} />
+      <BookOfTheWeek book={bookOfTheWeek} />
       {/* Filter Section */}
       <BookFilter
         genres={genres}

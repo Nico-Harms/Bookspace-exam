@@ -5,7 +5,7 @@ import UserBookProgress, { ReadingStatus } from "~/models/UserBookProgress";
 import Book from "~/models/Book";
 import type { Book as BookType } from "~/types/book";
 import User from "~/models/User";
-import { StatsCard } from "~/components/progress/Statscard";
+import { StatsCard } from "~/components/progress/StatsCard";
 import { ProgressBookCard } from "~/components/progress/ProgressBookCard";
 
 type LoaderData = {
