@@ -3,20 +3,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-export default defineConfig(({ command }) => ({
-  ssr: {
-    noExternal: command === "build" ? true : undefined,
-  },
-  build: {
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          ui: ["@headlessui/react", "@heroicons/react"],
-        },
-      },
-    },
-  },
+export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
-}));
+});
