@@ -6,7 +6,7 @@
     "node": ">=18.x"
   },
   "scripts": {
-    "build": "react-router build",
+    "build": "react-router build && cp -r build/client build/server/",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
