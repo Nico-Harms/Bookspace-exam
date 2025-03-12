@@ -1,0 +1,244 @@
+{
+  "buildManifest": {
+    "serverBundles": {
+      "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0": {
+        "id": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+        "file": "build/server/nodejs_eyJydW50aW1lIjoibm9kZWpzIn0/index.js",
+        "config": {
+          "runtime": "nodejs"
+        }
+      }
+    },
+    "routeIdToServerBundleId": {
+      "root": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/home": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/progress": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/progress-single": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/bookmarks": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/profile": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/book-single": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/login": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/signup": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/logout": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/reset-password": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/dashboard": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/auth/google": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/auth/google-callback": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
+    },
+    "routes": {
+      "root": {
+        "path": "",
+        "id": "root",
+        "file": "app/root.tsx",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "layouts/protected": {
+        "id": "layouts/protected",
+        "parentId": "root",
+        "file": "app/layouts/protected.tsx",
+        "config": {}
+      },
+      "routes/home": {
+        "id": "routes/home",
+        "parentId": "layouts/protected",
+        "file": "app/routes/home.tsx",
+        "index": true,
+        "config": {}
+      },
+      "routes/progress": {
+        "id": "routes/progress",
+        "parentId": "layouts/protected",
+        "file": "app/routes/progress.tsx",
+        "path": "progress",
+        "config": {}
+      },
+      "routes/progress-single": {
+        "id": "routes/progress-single",
+        "parentId": "layouts/protected",
+        "file": "app/routes/progress-single.tsx",
+        "path": "progress/:id",
+        "config": {}
+      },
+      "routes/bookmarks": {
+        "id": "routes/bookmarks",
+        "parentId": "layouts/protected",
+        "file": "app/routes/bookmarks.tsx",
+        "path": "bookmarks",
+        "config": {}
+      },
+      "routes/profile": {
+        "id": "routes/profile",
+        "parentId": "layouts/protected",
+        "file": "app/routes/profile.tsx",
+        "path": "profile",
+        "config": {}
+      },
+      "routes/book-single": {
+        "id": "routes/book-single",
+        "parentId": "layouts/protected",
+        "file": "app/routes/book-single.tsx",
+        "path": "books/:id",
+        "config": {}
+      },
+      "routes/login": {
+        "id": "routes/login",
+        "parentId": "root",
+        "file": "app/routes/login.tsx",
+        "path": "login",
+        "config": {}
+      },
+      "routes/signup": {
+        "id": "routes/signup",
+        "parentId": "root",
+        "file": "app/routes/signup.tsx",
+        "path": "signup",
+        "config": {}
+      },
+      "routes/logout": {
+        "id": "routes/logout",
+        "parentId": "root",
+        "file": "app/routes/logout.tsx",
+        "path": "logout",
+        "config": {}
+      },
+      "routes/reset-password": {
+        "id": "routes/reset-password",
+        "parentId": "root",
+        "file": "app/routes/reset-password.tsx",
+        "path": "reset-password",
+        "config": {}
+      },
+      "routes/dashboard": {
+        "id": "routes/dashboard",
+        "parentId": "root",
+        "file": "app/routes/dashboard.tsx",
+        "path": "dashboard",
+        "config": {}
+      },
+      "routes/auth/google": {
+        "id": "routes/auth/google",
+        "parentId": "root",
+        "file": "app/routes/auth/google.ts",
+        "path": "auth/google",
+        "config": {}
+      },
+      "routes/auth/google-callback": {
+        "id": "routes/auth/google-callback",
+        "parentId": "root",
+        "file": "app/routes/auth/google-callback.ts",
+        "path": "auth/google/callback",
+        "config": {}
+      }
+    }
+  },
+  "reactRouterConfig": {
+    "appDirectory": "/Users/nharms/Desktop/Webudvikler/2. Semester/awu-exam-Nico-Harms/app",
+    "basename": "/",
+    "buildDirectory": "/Users/nharms/Desktop/Webudvikler/2. Semester/awu-exam-Nico-Harms/build",
+    "future": {
+      "unstable_optimizeDeps": false,
+      "unstable_splitRouteModules": false,
+      "unstable_viteEnvironmentApi": false
+    },
+    "routes": {
+      "root": {
+        "path": "",
+        "id": "root",
+        "file": "root.tsx"
+      },
+      "layouts/protected": {
+        "id": "layouts/protected",
+        "parentId": "root",
+        "file": "layouts/protected.tsx"
+      },
+      "routes/home": {
+        "id": "routes/home",
+        "parentId": "layouts/protected",
+        "file": "routes/home.tsx",
+        "index": true
+      },
+      "routes/progress": {
+        "id": "routes/progress",
+        "parentId": "layouts/protected",
+        "file": "routes/progress.tsx",
+        "path": "progress"
+      },
+      "routes/progress-single": {
+        "id": "routes/progress-single",
+        "parentId": "layouts/protected",
+        "file": "routes/progress-single.tsx",
+        "path": "progress/:id"
+      },
+      "routes/bookmarks": {
+        "id": "routes/bookmarks",
+        "parentId": "layouts/protected",
+        "file": "routes/bookmarks.tsx",
+        "path": "bookmarks"
+      },
+      "routes/profile": {
+        "id": "routes/profile",
+        "parentId": "layouts/protected",
+        "file": "routes/profile.tsx",
+        "path": "profile"
+      },
+      "routes/book-single": {
+        "id": "routes/book-single",
+        "parentId": "layouts/protected",
+        "file": "routes/book-single.tsx",
+        "path": "books/:id"
+      },
+      "routes/login": {
+        "id": "routes/login",
+        "parentId": "root",
+        "file": "routes/login.tsx",
+        "path": "login"
+      },
+      "routes/signup": {
+        "id": "routes/signup",
+        "parentId": "root",
+        "file": "routes/signup.tsx",
+        "path": "signup"
+      },
+      "routes/logout": {
+        "id": "routes/logout",
+        "parentId": "root",
+        "file": "routes/logout.tsx",
+        "path": "logout"
+      },
+      "routes/reset-password": {
+        "id": "routes/reset-password",
+        "parentId": "root",
+        "file": "routes/reset-password.tsx",
+        "path": "reset-password"
+      },
+      "routes/dashboard": {
+        "id": "routes/dashboard",
+        "parentId": "root",
+        "file": "routes/dashboard.tsx",
+        "path": "dashboard"
+      },
+      "routes/auth/google": {
+        "id": "routes/auth/google",
+        "parentId": "root",
+        "file": "routes/auth/google.ts",
+        "path": "auth/google"
+      },
+      "routes/auth/google-callback": {
+        "id": "routes/auth/google-callback",
+        "parentId": "root",
+        "file": "routes/auth/google-callback.ts",
+        "path": "auth/google/callback"
+      }
+    },
+    "serverBuildFile": "index.js",
+    "serverModuleFormat": "esm",
+    "ssr": true
+  },
+  "viteConfig": {
+    "build": {
+      "assetsDir": "assets"
+    }
+  }
+}

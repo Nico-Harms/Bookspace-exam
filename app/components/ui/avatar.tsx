@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 /*===============================================
-=          Avatar component for profile pictures           =
+=  Avatar component for profile pictures   =
 ===============================================*/
 
 interface AvatarProps {
