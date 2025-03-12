@@ -27,7 +27,6 @@ const bookSchema = new Schema(
       type: String,
       required: [true, "Slug is required"],
       unique: true,
-      index: true,
     },
     pageCount: { type: Number, default: 0 },
     rating: { type: Number, default: 0 },
@@ -56,7 +55,6 @@ bookSchema.virtual("reviews", {
 });
 
 // Create indexes for common queries
-bookSchema.index({ slug: 1 });
 bookSchema.index({ title: 1 });
 bookSchema.index({ genres: 1 });
 

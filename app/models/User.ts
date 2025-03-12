@@ -16,9 +16,8 @@ const userSchema = new Schema(
     profileImage: String,
     bookmarks: [
       {
-        type: Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "Book",
-        default: [],
       },
     ],
   },
